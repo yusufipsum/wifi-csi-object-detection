@@ -1,0 +1,418 @@
+:root {
+  --bg: #f4f6f5;
+  --ink: #18201d;
+  --muted: #66716c;
+  --line: #d8dfdb;
+  --panel: #ffffff;
+  --green: #187a55;
+  --blue: #195c9d;
+  --amber: #b66b00;
+  --red: #b33a3a;
+  --shadow: 0 10px 28px rgba(21, 31, 27, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background: var(--bg);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.shell {
+  width: min(1380px, calc(100vw - 32px));
+  margin: 0 auto;
+  padding: 22px 0 32px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: clamp(28px, 4vw, 48px);
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+h2 {
+  font-size: 16px;
+  font-weight: 750;
+  letter-spacing: 0;
+}
+
+.subtle {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.statusStrip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.pill {
+  min-width: 96px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  color: #fff;
+  text-align: center;
+  background: var(--muted);
+  font-weight: 720;
+}
+
+.pill.live {
+  background: var(--green);
+}
+
+.pill.error {
+  background: var(--red);
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: minmax(90px, 120px) minmax(210px, 260px) minmax(90px, 110px) minmax(140px, 170px) minmax(160px, 1fr) auto auto;
+  gap: 10px;
+  align-items: end;
+  padding: 12px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.mlAlert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 58px;
+  margin-top: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.mlAlert strong {
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.mlAlert span {
+  color: var(--muted);
+  font-size: 14px;
+  text-align: right;
+}
+
+.mlAlert.active {
+  border-color: #e4b0b0;
+  background: #fff4f4;
+}
+
+.mlAlert.active strong {
+  color: var(--red);
+}
+
+.mlAlert.clear {
+  border-color: #b9dacd;
+  background: #f3fbf7;
+}
+
+.mlAlert.clear strong {
+  color: var(--green);
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+input,
+select {
+  width: 100%;
+  height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--ink);
+  background: #fff;
+  padding: 0 10px;
+  font: inherit;
+}
+
+button {
+  height: 42px;
+  border: 1px solid #bfc9c4;
+  border-radius: 6px;
+  color: var(--ink);
+  background: #fff;
+  padding: 0 18px;
+  font: inherit;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+button.primary {
+  border-color: var(--green);
+  color: #fff;
+  background: var(--green);
+}
+
+button.smallButton {
+  height: 34px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.metricGrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin: 14px 0;
+}
+
+.metric,
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.metric {
+  display: grid;
+  gap: 8px;
+  min-height: 116px;
+  padding: 16px;
+}
+
+.metric span,
+.metric small,
+.panelHead span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.metric strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.charts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.panel {
+  min-width: 0;
+  padding: 14px;
+}
+
+.panel.wide {
+  grid-column: 1 / -1;
+}
+
+.panelHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+  background: #101613;
+}
+
+.chartMeta,
+.chartScale {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.chartMeta {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.heatLegend {
+  display: grid;
+  grid-template-columns: auto minmax(120px, 220px) auto;
+  gap: 10px;
+  align-items: center;
+  width: min(100%, 420px);
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.legendRamp {
+  display: block;
+  height: 10px;
+  border: 1px solid rgba(24, 32, 29, 0.14);
+  border-radius: 999px;
+  background: linear-gradient(90deg, #121613, #195c9d, #187a55, #e1ad41, #b33a3a);
+}
+
+#logs {
+  height: 196px;
+  margin: 0;
+  padding: 12px;
+  overflow: auto;
+  color: #cfe0d6;
+  background: #101613;
+  border-radius: 6px;
+  font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre-wrap;
+}
+
+.pathLine {
+  min-height: 18px;
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.fileGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.fileGrid h3 {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: 0;
+}
+
+.fileList {
+  display: grid;
+  gap: 8px;
+  max-height: 340px;
+  overflow: auto;
+}
+
+.fileItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  min-height: 54px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fbfcfb;
+}
+
+.fileName {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 760;
+  font-size: 13px;
+}
+
+.fileMeta {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.downloadLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 70px;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 6px;
+  color: #fff;
+  background: var(--blue);
+  font-size: 13px;
+  font-weight: 760;
+  text-decoration: none;
+}
+
+.fileActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.deleteButton {
+  min-width: 56px;
+  height: 34px;
+  padding: 0 12px;
+  border-color: #d8b7b7;
+  color: var(--red);
+  background: #fff7f7;
+  font-size: 13px;
+}
+
+@media (max-width: 860px) {
+  .shell {
+    width: min(100vw - 20px, 720px);
+    padding-top: 14px;
+  }
+
+  .topbar,
+  .statusStrip,
+  .mlAlert {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .mlAlert span {
+    text-align: left;
+  }
+
+  .controls,
+  .metricGrid,
+  .charts,
+  .fileGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .metric strong {
+    font-size: 26px;
+  }
+}

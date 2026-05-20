@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CSI Alpha Live</title>
+    <link rel="stylesheet" href="/style.css">
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <h1>CSI Alpha Live</h1>
+          <p class="subtle">mgmt0 uzerinden web, csi0 uzerinden Nexmon CSI</p>
+        </div>
+        <div class="statusStrip">
+          <span id="runState" class="pill idle">Bekliyor</span>
+          <span id="packetRate">0 pkt/s</span>
+          <span id="frameCount">0 frame</span>
+        </div>
+      </header>
+
+      <section class="controls" aria-label="capture controls">
+        <label>
+          <span>Kanal</span>
+          <input id="channel" value="48/80" autocomplete="off">
+        </label>
+        <label>
+          <span>Bravo MAC</span>
+          <input id="sourceMac" value="88:a2:9e:5d:4e:a6" autocomplete="off">
+        </label>
+        <label>
+          <span>Mesafe</span>
+          <input id="distanceM" type="number" value="2" min="0.2" max="20" step="0.1">
+        </label>
+        <label>
+          <span>Etiket</span>
+          <select id="labelName">
+            <option value="">sadece izle</option>
+            <option value="empty">empty</option>
+            <option value="stable">stable</option>
+            <option value="walk">walk</option>
+            <option value="sit">sit</option>
+            <option value="stand">stand</option>
+            <option value="hand_motion">hand_motion</option>
+            <option value="passage">passage</option>
+          </select>
+        </label>
+        <label>
+          <span>Not</span>
+          <input id="note" value="" autocomplete="off" placeholder="opsiyonel">
+        </label>
+        <button id="startBtn" class="primary">Baslat</button>
+        <button id="stopBtn">Durdur</button>
+      </section>
+
+      <section id="mlAlert" class="mlAlert idle">
+        <strong id="mlAlertTitle">ML modeli bekliyor</strong>
+        <span id="mlAlertMeta">hand_motion modeli yuklenmedi</span>
+      </section>
+
+      <section class="metricGrid">
+        <article class="metric">
+          <span>Sinif</span>
+          <strong id="classLabel">Bekliyor</strong>
+          <small id="classMeta">rules-v0</small>
+        </article>
+        <article class="metric">
+          <span>RSSI</span>
+          <strong id="rssi">--</strong>
+          <small>dBm yaklasik</small>
+        </article>
+        <article class="metric">
+          <span>Ortalama amplitud</span>
+          <strong id="avgAmp">--</strong>
+          <small id="peakAmp">peak --</small>
+        </article>
+        <article class="metric">
+          <span>Hareket skoru</span>
+          <strong id="motionScore">0.00</strong>
+          <small id="sourceInfo">--</small>
+        </article>
+        <article class="metric">
+          <span>ML kaydi</span>
+          <strong id="datasetSamples">0</strong>
+          <small id="datasetInfo">etiket yok</small>
+        </article>
+      </section>
+
+      <section class="charts">
+        <article class="panel wide">
+          <div class="panelHead">
+            <h2>Subcarrier amplitud</h2>
+            <span id="seqInfo">seq --</span>
+          </div>
+          <canvas id="ampCanvas" width="960" height="260"></canvas>
+          <div id="ampMeta" class="chartMeta">Subcarrier bilgisi bekleniyor</div>
+          <div id="ampScale" class="chartScale">x: tone indeksi · y: log10 amplitud</div>
+        </article>
+
+        <article class="panel wide">
+          <div class="panelHead">
+            <h2>CSI zaman-isı haritasi</h2>
+            <span id="heatWindow">son 120 kesit</span>
+          </div>
+          <canvas id="heatCanvas" width="960" height="320"></canvas>
+          <div class="heatLegend" aria-label="heatmap color scale">
+            <span>Düşük enerji</span>
+            <span class="legendRamp"></span>
+            <span>Yüksek enerji</span>
+          </div>
+          <div id="heatMeta" class="chartMeta">Heatmap matrisi bekleniyor</div>
+          <div id="heatScale" class="chartScale">renk: her zaman satırında normalize edilmiş log10 amplitud</div>
+        </article>
+
+        <article class="panel">
+          <div class="panelHead">
+            <h2>Dalgalanma</h2>
+            <span>hareket izi</span>
+          </div>
+          <canvas id="motionCanvas" width="460" height="220"></canvas>
+          <div id="motionMeta" class="chartMeta">Hareket penceresi bekleniyor</div>
+        </article>
+
+        <article class="panel">
+          <div class="panelHead">
+            <h2>Sistem</h2>
+            <span id="capturePath">pcap --</span>
+          </div>
+          <p id="datasetPath" class="pathLine">dataset --</p>
+          <pre id="logs"></pre>
+        </article>
+
+        <article class="panel wide">
+          <div class="panelHead">
+            <h2>Kayıtlar</h2>
+            <button id="refreshFiles" class="smallButton">Yenile</button>
+          </div>
+          <p id="filesMeta" class="pathLine">pcap ve dataset dosyaları burada görünür</p>
+          <div class="fileGrid">
+            <section>
+              <h3>CSI pcap</h3>
+              <div id="captureFiles" class="fileList"></div>
+            </section>
+            <section>
+              <h3>ML dataset</h3>
+              <div id="datasetFiles" class="fileList"></div>
+            </section>
+          </div>
+        </article>
+      </section>
+    </main>
+    <script src="/app.js"></script>
+  </body>
+</html>

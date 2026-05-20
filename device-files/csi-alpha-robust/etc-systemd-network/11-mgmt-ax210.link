@@ -1,0 +1,5 @@
+[Match]
+MACAddress=ac:45:ef:1f:50:36
+
+[Link]
+Name=mgmt0

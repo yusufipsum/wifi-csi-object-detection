@@ -1,0 +1,16 @@
+[Unit]
+Description=CSI Alpha live web UI
+After=network-online.target csi-alpha-net-guard.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/home/admin/csi/webui
+ExecStart=/usr/bin/python3 /home/admin/csi/webui/csi_web.py --host 0.0.0.0 --port 8080
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

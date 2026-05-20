@@ -1,0 +1,12 @@
+[Unit]
+Description=CSI Alpha Wi-Fi role guard
+After=NetworkManager.service
+Wants=NetworkManager.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/csi-alpha-net-guard.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
