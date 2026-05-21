@@ -122,6 +122,7 @@ motionScore = mean(abs(current_amp - previous_amp)) / mean(previous_amp)
 
 Bu değer tek başına nihai model değildir; ama canlı hareket yoğunluğu için hızlı bir göstergedir. Ayrıca geçici canlı el hareketi modelinde pencere özellikleri olarak kullanılır.
 
+
 ## CNN ve LSTM Neden Kullanılır?
 
 CSI verisi iki boyutlu bir yapıya benzer:
@@ -166,6 +167,30 @@ Bu katman şunu öğrenmeye çalışır:
 - `stable` ile `hand_motion` zaman içinde nasıl ayrışıyor?
 
 Yani CNN frekans örüntüsünü, LSTM zaman örüntüsünü öğrenir.
+
+1. Genlik (Amplitude) Neyi Temsil Eder?
+Genlik, radyo sinyalinin gücündeki düşüşü veya artışı temsil eder. Sinyal odadaki bir eşyaya veya insana çarptığında enerjisinin bir kısmını kaybeder (sönümlenme).
+
+Modeldeki Görevi: Makro hareketleri yakalamak. Biri Wi-Fi vericisi ile alıcısının arasından geçtiğinde genlikte devasa bir düşüş (çukur) oluşur. Ağ, bu "güç kaybı" desenine bakarak orada büyük bir cisim olduğunu anlar.
+
+2. Faz (Phase) Neyi Temsil Eder?
+Faz, radyo dalgasının alıcıya ne kadar gecikmeyle (hangi açıyla) ulaştığıdır. Mesafe ve yön bilgisi taşır.
+
+Modeldeki Görevi: Mikro hareketleri ve yönü yakalamak. Ortamda sadece kolunu kaldıran bir insanın veya göğüs kafesi inip kalkan (nefes alan) birinin yarattığı değişim genlikte çok zayıftır, ancak faz verisinde muazzam bir dalgalanma yaratır. Ağ, faz verisine bakarak hareketin ince detaylarını (el sallama, düşme, yön) çözer.
+
+Ham faz verisi doğrudan yapay sinir ağına beslenmez.
+
+Çünkü Wi-Fi kartındaki alıcı ve verici osilatörleri donanımsal olarak tam senkronize değildir. Bu durum CFO (Carrier Frequency Offset) ve SFO (Sampling Frequency Offset) dediğimiz donanımsal zamanlama hataları yaratır ve ham faz verisi sürekli kayan, anlamsız bir gürültü gibi görünür.
+
+Modele girmeden önce, faz verisine bir Lineer Dönüşüm (Phase Sanitization/Unwrapping) işlemi uygulanarak bu donanım hataları temizlenir. Gerçek fiziksel hareketin izi ancak bu temizlikten sonra ortaya çıkar ve ağa verilir.
+
+Modele Nasıl Beslenir? (Tensör Yapısı)
+Genlik ve temizlenmiş faz bilgisi, görüntü işlemedeki RGB (Kırmızı-Yeşil-Mavi) kanalları gibi modele 2 kanallı bir veri olarak beslenir.Ağın giriş tensörü şu şekli alır: X ∈ R^(T × S × 2)
+T: Zaman adımı (Paket sayısı)
+S: Alt taşıyıcı (Subcarrier) sayısı
+2: Kanal sayısı (Kanal 1: Genlik, Kanal 2: Faz)
+
+"Genlik verisini temizlemek nispeten kolaydır, ancak iş faz verisine geldiğinde büyük bir donanım problemiyle karşılaşırız. Wi-Fi vericisi ile alıcısının iç saatleri mikrosaniye düzeyinde bile olsa senkronize değildir. Bu durum, sinyalde CFO ve SFO dediğimiz devasa donanımsal kaymalara yol açar; yani ham faz verisi ekranda anlamsız bir gürültü (noise) olarak görünür.Ağımıza bu gürültüyü vermemek için 'Phase Sanitization' dediğimiz bir kalibrasyon uyguluyoruz. Önce fazdaki 2pi sıçramalarını düzeltiyor, ardından alt taşıyıcılar boyunca oluşan bu donanımsal doğrusal kaymayı (slope) hesaplayıp matematiksel olarak sinyalden çıkartıyoruz. φ̂_i = φ_i - a m_i - b formülü tam olarak bu temizliği yapıyor. Sonuç olarak elimizde cihazların saat farklarından arınmış, sadece odadaki nesnenin hareketinden kaynaklanan saf faz verisi kalıyor ve YSA modelimize işte bu temizlenmiş veriyi 2. kanal olarak besliyoruz.
 
 ## Eğitim Pipeline'ı
 
