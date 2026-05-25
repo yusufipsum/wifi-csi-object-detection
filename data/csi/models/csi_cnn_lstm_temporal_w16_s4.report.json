@@ -1,0 +1,724 @@
+{
+  "labels": [
+    "empty",
+    "hand_motion",
+    "passage",
+    "sit",
+    "stand"
+  ],
+  "dataset": "data/csi/csi_temporal_w16_s4.npz",
+  "output": "data/csi/models/csi_cnn_lstm_temporal_w16_s4.pt",
+  "device": "mps",
+  "epochsRequested": 80,
+  "epochsRun": 39,
+  "bestEpoch": 27,
+  "classWeights": {
+    "empty": 0.6856062412261963,
+    "hand_motion": 1.2393851280212402,
+    "passage": 0.7220351099967957,
+    "sit": 1.3528554439544678,
+    "stand": 1.0001176595687866
+  },
+  "validation": {
+    "accuracy": 0.9493670886075949,
+    "macroF1": 0.9318393334293955,
+    "total": 158,
+    "correct": 150,
+    "perClass": [
+      {
+        "precision": 0.9827586206896551,
+        "recall": 1.0,
+        "f1": 0.9913043478260869,
+        "support": 57
+      },
+      {
+        "precision": 1.0,
+        "recall": 0.9285714285714286,
+        "f1": 0.962962962962963,
+        "support": 14
+      },
+      {
+        "precision": 0.9787234042553191,
+        "recall": 0.9019607843137255,
+        "f1": 0.9387755102040817,
+        "support": 51
+      },
+      {
+        "precision": 0.7857142857142857,
+        "recall": 0.9166666666666666,
+        "f1": 0.8461538461538461,
+        "support": 12
+      },
+      {
+        "precision": 0.8846153846153846,
+        "recall": 0.9583333333333334,
+        "f1": 0.9199999999999999,
+        "support": 24
+      }
+    ],
+    "loss": 0.18732509120732924
+  },
+  "validationConfusion": [
+    [
+      57,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      13,
+      0,
+      0,
+      1
+    ],
+    [
+      0,
+      0,
+      46,
+      3,
+      2
+    ],
+    [
+      1,
+      0,
+      0,
+      11,
+      0
+    ],
+    [
+      0,
+      0,
+      1,
+      0,
+      23
+    ]
+  ],
+  "test": {
+    "accuracy": 0.8924050632911392,
+    "macroF1": 0.8183755849801495,
+    "total": 158,
+    "correct": 141,
+    "perClass": [
+      {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 57
+      },
+      {
+        "precision": 0.6428571428571429,
+        "recall": 0.6428571428571429,
+        "f1": 0.6428571428571429,
+        "support": 14
+      },
+      {
+        "precision": 0.8225806451612904,
+        "recall": 1.0,
+        "f1": 0.9026548672566371,
+        "support": 51
+      },
+      {
+        "precision": 1.0,
+        "recall": 0.5833333333333334,
+        "f1": 0.7368421052631579,
+        "support": 12
+      },
+      {
+        "precision": 0.9444444444444444,
+        "recall": 0.7083333333333334,
+        "f1": 0.8095238095238096,
+        "support": 24
+      }
+    ],
+    "loss": 0.44309502947321044
+  },
+  "testConfusion": [
+    [
+      57,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      9,
+      5,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      51,
+      0,
+      0
+    ],
+    [
+      0,
+      2,
+      2,
+      7,
+      1
+    ],
+    [
+      0,
+      3,
+      4,
+      0,
+      17
+    ]
+  ],
+  "history": [
+    {
+      "epoch": 1,
+      "trainLoss": 1.348739760770034,
+      "valAccuracy": 0.6265822784810127,
+      "valMacroF1": 0.4444435422735574,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 2,
+      "trainLoss": 0.9190409685202373,
+      "valAccuracy": 0.7278481012658228,
+      "valMacroF1": 0.5292642483365706,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 3,
+      "trainLoss": 0.7471261247576282,
+      "valAccuracy": 0.7848101265822784,
+      "valMacroF1": 0.6398896010348983,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 4,
+      "trainLoss": 0.574500251859704,
+      "valAccuracy": 0.8164556962025317,
+      "valMacroF1": 0.71607997265892,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 5,
+      "trainLoss": 0.5133542678764634,
+      "valAccuracy": 0.8291139240506329,
+      "valMacroF1": 0.7189154704944178,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 6,
+      "trainLoss": 0.4189664157631233,
+      "valAccuracy": 0.8734177215189873,
+      "valMacroF1": 0.789234992242511,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 7,
+      "trainLoss": 0.3723995934207568,
+      "valAccuracy": 0.8670886075949367,
+      "valMacroF1": 0.7777031108165849,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 8,
+      "trainLoss": 0.2962575150823682,
+      "valAccuracy": 0.9050632911392406,
+      "valMacroF1": 0.8431772184083396,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 9,
+      "trainLoss": 0.24060558634541332,
+      "valAccuracy": 0.8924050632911392,
+      "valMacroF1": 0.8202942237543592,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 10,
+      "trainLoss": 0.1987614953262624,
+      "valAccuracy": 0.9177215189873418,
+      "valMacroF1": 0.8600347954365063,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 11,
+      "trainLoss": 0.17006893827817515,
+      "valAccuracy": 0.9113924050632911,
+      "valMacroF1": 0.832040727628342,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 12,
+      "trainLoss": 0.14806232530644486,
+      "valAccuracy": 0.9050632911392406,
+      "valMacroF1": 0.8323202755058114,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 13,
+      "trainLoss": 0.1206417206667877,
+      "valAccuracy": 0.8987341772151899,
+      "valMacroF1": 0.8240632411067192,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 14,
+      "trainLoss": 0.09665285257598319,
+      "valAccuracy": 0.8987341772151899,
+      "valMacroF1": 0.8473246909036382,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 15,
+      "trainLoss": 0.08601824946188172,
+      "valAccuracy": 0.8607594936708861,
+      "valMacroF1": 0.80613096327479,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 16,
+      "trainLoss": 0.0544511654468,
+      "valAccuracy": 0.8924050632911392,
+      "valMacroF1": 0.8356132193430991,
+      "lr": 0.00035
+    },
+    {
+      "epoch": 17,
+      "trainLoss": 0.045535093450873705,
+      "valAccuracy": 0.8987341772151899,
+      "valMacroF1": 0.8446668846028113,
+      "lr": 0.00035
+    },
+    {
+      "epoch": 18,
+      "trainLoss": 0.04674680588950769,
+      "valAccuracy": 0.9240506329113924,
+      "valMacroF1": 0.8856399032299654,
+      "lr": 0.00035
+    },
+    {
+      "epoch": 19,
+      "trainLoss": 0.026690304015712808,
+      "valAccuracy": 0.9240506329113924,
+      "valMacroF1": 0.8830245186145808,
+      "lr": 0.00035
+    },
+    {
+      "epoch": 20,
+      "trainLoss": 0.029408548474728062,
+      "valAccuracy": 0.930379746835443,
+      "valMacroF1": 0.8950600609398804,
+      "lr": 0.00035
+    },
+    {
+      "epoch": 21,
+      "trainLoss": 0.02614616170470053,
+      "valAccuracy": 0.9177215189873418,
+      "valMacroF1": 0.8776433935013301,
+      "lr": 0.00035
+    },
+    {
+      "epoch": 22,
+      "trainLoss": 0.021811698339671396,
+      "valAccuracy": 0.9177215189873418,
+      "valMacroF1": 0.878481000338937,
+      "lr": 0.00035
+    },
+    {
+      "epoch": 23,
+      "trainLoss": 0.021324344249910483,
+      "valAccuracy": 0.9367088607594937,
+      "valMacroF1": 0.9127975895485341,
+      "lr": 0.00035
+    },
+    {
+      "epoch": 24,
+      "trainLoss": 0.01807255632620395,
+      "valAccuracy": 0.9240506329113924,
+      "valMacroF1": 0.8887729348195507,
+      "lr": 0.00035
+    },
+    {
+      "epoch": 25,
+      "trainLoss": 0.02110622161773885,
+      "valAccuracy": 0.930379746835443,
+      "valMacroF1": 0.896306324110672,
+      "lr": 0.00035
+    },
+    {
+      "epoch": 26,
+      "trainLoss": 0.017175313928190557,
+      "valAccuracy": 0.930379746835443,
+      "valMacroF1": 0.896306324110672,
+      "lr": 0.00035
+    },
+    {
+      "epoch": 27,
+      "trainLoss": 0.016486611687257416,
+      "valAccuracy": 0.9493670886075949,
+      "valMacroF1": 0.9318393334293955,
+      "lr": 0.00035
+    },
+    {
+      "epoch": 28,
+      "trainLoss": 0.015187868206749637,
+      "valAccuracy": 0.9113924050632911,
+      "valMacroF1": 0.872756834348783,
+      "lr": 0.00035
+    },
+    {
+      "epoch": 29,
+      "trainLoss": 0.015997862953214006,
+      "valAccuracy": 0.9240506329113924,
+      "valMacroF1": 0.8895679835039102,
+      "lr": 0.00035
+    },
+    {
+      "epoch": 30,
+      "trainLoss": 0.009829698575338006,
+      "valAccuracy": 0.930379746835443,
+      "valMacroF1": 0.8978073136871332,
+      "lr": 0.00035
+    },
+    {
+      "epoch": 31,
+      "trainLoss": 0.009090727680749512,
+      "valAccuracy": 0.9177215189873418,
+      "valMacroF1": 0.8779450800915332,
+      "lr": 0.00035
+    },
+    {
+      "epoch": 32,
+      "trainLoss": 0.009434589403343267,
+      "valAccuracy": 0.9113924050632911,
+      "valMacroF1": 0.8658010795483271,
+      "lr": 0.00035
+    },
+    {
+      "epoch": 33,
+      "trainLoss": 0.010906350828388105,
+      "valAccuracy": 0.9430379746835443,
+      "valMacroF1": 0.9060877220963984,
+      "lr": 0.000175
+    },
+    {
+      "epoch": 34,
+      "trainLoss": 0.010272631710447247,
+      "valAccuracy": 0.9367088607594937,
+      "valMacroF1": 0.9003447536078644,
+      "lr": 0.000175
+    },
+    {
+      "epoch": 35,
+      "trainLoss": 0.007998015984781849,
+      "valAccuracy": 0.9367088607594937,
+      "valMacroF1": 0.9011072808409798,
+      "lr": 0.000175
+    },
+    {
+      "epoch": 36,
+      "trainLoss": 0.008218216222452496,
+      "valAccuracy": 0.9367088607594937,
+      "valMacroF1": 0.9033362065993173,
+      "lr": 0.000175
+    },
+    {
+      "epoch": 37,
+      "trainLoss": 0.007174974050740512,
+      "valAccuracy": 0.9430379746835443,
+      "valMacroF1": 0.9136990513017846,
+      "lr": 0.000175
+    },
+    {
+      "epoch": 38,
+      "trainLoss": 0.010887230214015954,
+      "valAccuracy": 0.9367088607594937,
+      "valMacroF1": 0.9075544331444954,
+      "lr": 0.000175
+    },
+    {
+      "epoch": 39,
+      "trainLoss": 0.007536954348785473,
+      "valAccuracy": 0.930379746835443,
+      "valMacroF1": 0.8949217087260566,
+      "lr": 8.75e-05
+    }
+  ],
+  "splitReport": {
+    "window": 16,
+    "stride": 4,
+    "trainRatio": 0.6,
+    "valRatio": 0.2,
+    "testRatio": 0.2,
+    "purge": 8,
+    "sessions": [
+      {
+        "path": "data/csi/raw/empty-20260525-001442.ndjson",
+        "label": "empty",
+        "samples": 1246,
+        "durationSeconds": 3328.001,
+        "tones": 128,
+        "splitBounds": {
+          "train": [
+            0,
+            747
+          ],
+          "val": [
+            755,
+            996
+          ],
+          "test": [
+            1004,
+            1246
+          ]
+        },
+        "windows": {
+          "train": 183,
+          "val": 57,
+          "test": 57
+        },
+        "packetRate": {
+          "mean": 3.173354735152488,
+          "min": 1.0,
+          "max": 22.0
+        },
+        "motionScore": {
+          "mean": 0.07631594703049759,
+          "min": 0.0042,
+          "max": 0.5358
+        },
+        "rssi": {
+          "mean": -43.881219903691814,
+          "min": -45.0,
+          "max": -42.0
+        },
+        "meta": {
+          "type": "session",
+          "createdAt": 1779657282539,
+          "channel": "48/80",
+          "sourceMac": "88:a2:9e:5d:4e:a6",
+          "distanceM": 2.0,
+          "label": "empty",
+          "note": "",
+          "pcap": "/home/admin/csi/captures/csi-alpha-web-20260525-001442.pcap",
+          "tones": 128,
+          "feature": "log10_amplitude"
+        }
+      },
+      {
+        "path": "data/csi/raw/hand_motion-20260525-015623.ndjson",
+        "label": "hand_motion",
+        "samples": 394,
+        "durationSeconds": 874.515,
+        "tones": 128,
+        "splitBounds": {
+          "train": [
+            0,
+            236
+          ],
+          "val": [
+            244,
+            315
+          ],
+          "test": [
+            323,
+            394
+          ]
+        },
+        "windows": {
+          "train": 56,
+          "val": 14,
+          "test": 14
+        },
+        "packetRate": {
+          "mean": 5.258883248730965,
+          "min": 1.0,
+          "max": 52.0
+        },
+        "motionScore": {
+          "mean": 0.10646857868020304,
+          "min": 0.00815,
+          "max": 0.52465
+        },
+        "rssi": {
+          "mean": -47.213197969543145,
+          "min": -54.0,
+          "max": -43.0
+        },
+        "meta": {
+          "type": "session",
+          "createdAt": 1779663383695,
+          "channel": "48/80",
+          "sourceMac": "88:a2:9e:5d:4e:a6",
+          "distanceM": 2.0,
+          "label": "hand_motion",
+          "note": "curl",
+          "pcap": "/home/admin/csi/captures/csi-alpha-web-20260525-015623.pcap",
+          "tones": 128,
+          "feature": "log10_amplitude"
+        }
+      },
+      {
+        "path": "data/csi/raw/passage-20260525-021502.ndjson",
+        "label": "passage",
+        "samples": 1121,
+        "durationSeconds": 935.934,
+        "tones": 128,
+        "splitBounds": {
+          "train": [
+            0,
+            672
+          ],
+          "val": [
+            680,
+            896
+          ],
+          "test": [
+            904,
+            1121
+          ]
+        },
+        "windows": {
+          "train": 165,
+          "val": 51,
+          "test": 51
+        },
+        "packetRate": {
+          "mean": 15.179304192685102,
+          "min": 1.0,
+          "max": 90.0
+        },
+        "motionScore": {
+          "mean": 0.10538423728813559,
+          "min": 0.00588,
+          "max": 0.49524
+        },
+        "rssi": {
+          "mean": -46.86351471900089,
+          "min": -55.0,
+          "max": -41.0
+        },
+        "meta": {
+          "type": "session",
+          "createdAt": 1779664502097,
+          "channel": "48/80",
+          "sourceMac": "88:a2:9e:5d:4e:a6",
+          "distanceM": 2.0,
+          "label": "passage",
+          "note": "15-20snlik gir cik islemi",
+          "pcap": "/home/admin/csi/captures/csi-alpha-web-20260525-021502.pcap",
+          "tones": 128,
+          "feature": "log10_amplitude"
+        }
+      },
+      {
+        "path": "data/csi/raw/sit-20260525-011707.ndjson",
+        "label": "sit",
+        "samples": 338,
+        "durationSeconds": 902.143,
+        "tones": 128,
+        "splitBounds": {
+          "train": [
+            0,
+            202
+          ],
+          "val": [
+            210,
+            270
+          ],
+          "test": [
+            278,
+            338
+          ]
+        },
+        "windows": {
+          "train": 47,
+          "val": 12,
+          "test": 12
+        },
+        "packetRate": {
+          "mean": 4.331360946745562,
+          "min": 1.0,
+          "max": 89.0
+        },
+        "motionScore": {
+          "mean": 0.0775555325443787,
+          "min": 0.00547,
+          "max": 0.3961
+        },
+        "rssi": {
+          "mean": -48.89940828402367,
+          "min": -50.0,
+          "max": -46.0
+        },
+        "meta": {
+          "type": "session",
+          "createdAt": 1779661027091,
+          "channel": "48/80",
+          "sourceMac": "88:a2:9e:5d:4e:a6",
+          "distanceM": 2.0,
+          "label": "sit",
+          "note": "",
+          "pcap": "/home/admin/csi/captures/csi-alpha-web-20260525-011707.pcap",
+          "tones": 128,
+          "feature": "log10_amplitude"
+        }
+      },
+      {
+        "path": "data/csi/raw/stand-20260525-013521.ndjson",
+        "label": "stand",
+        "samples": 594,
+        "durationSeconds": 1182.717,
+        "tones": 128,
+        "splitBounds": {
+          "train": [
+            0,
+            356
+          ],
+          "val": [
+            364,
+            475
+          ],
+          "test": [
+            483,
+            594
+          ]
+        },
+        "windows": {
+          "train": 86,
+          "val": 24,
+          "test": 24
+        },
+        "packetRate": {
+          "mean": 8.333333333333334,
+          "min": 1.0,
+          "max": 103.0
+        },
+        "motionScore": {
+          "mean": 0.08588309764309765,
+          "min": 0.00464,
+          "max": 0.86343
+        },
+        "rssi": {
+          "mean": -47.215488215488215,
+          "min": -50.0,
+          "max": -43.0
+        },
+        "meta": {
+          "type": "session",
+          "createdAt": 1779662121310,
+          "channel": "48/80",
+          "sourceMac": "88:a2:9e:5d:4e:a6",
+          "distanceM": 2.0,
+          "label": "stand",
+          "note": "",
+          "pcap": "/home/admin/csi/captures/csi-alpha-web-20260525-013521.pcap",
+          "tones": 128,
+          "feature": "log10_amplitude"
+        }
+      }
+    ]
+  }
+}

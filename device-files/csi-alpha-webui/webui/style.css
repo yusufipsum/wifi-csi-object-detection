@@ -199,7 +199,8 @@ button:disabled {
 }
 
 .metric,
-.panel {
+.panel,
+.alarmPanel {
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -234,9 +235,14 @@ button:disabled {
   gap: 12px;
 }
 
-.panel {
+.panel,
+.alarmPanel {
   min-width: 0;
   padding: 14px;
+}
+
+.alarmPanel {
+  margin-top: 12px;
 }
 
 .panel.wide {
@@ -249,6 +255,75 @@ button:disabled {
   align-items: center;
   gap: 12px;
   margin-bottom: 10px;
+}
+
+.panelActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+button.dangerButton {
+  border-color: #d8b7b7;
+  color: var(--red);
+  background: #fff7f7;
+}
+
+.alarmList {
+  display: grid;
+  gap: 8px;
+  max-height: 260px;
+  overflow: auto;
+}
+
+.alarmItem {
+  display: grid;
+  grid-template-columns: minmax(130px, 170px) minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  min-height: 58px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fbfcfb;
+}
+
+.alarmBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--red);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.alarmBadge.hand_motion {
+  background: var(--amber);
+}
+
+.alarmBadge.passage {
+  background: var(--red);
+}
+
+.alarmInfo {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.alarmInfo strong {
+  display: block;
+  font-size: 14px;
+}
+
+.alarmInfo span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 canvas {
@@ -408,8 +483,17 @@ canvas {
   .controls,
   .metricGrid,
   .charts,
-  .fileGrid {
+  .fileGrid,
+  .alarmItem {
     grid-template-columns: 1fr;
+  }
+
+  .panelActions {
+    width: 100%;
+  }
+
+  .panelActions button {
+    flex: 1;
   }
 
   .metric strong {

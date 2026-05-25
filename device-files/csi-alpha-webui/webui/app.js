@@ -10,6 +10,7 @@ const state = {
   latestSample: null,
   latestAmpStats: null,
   latestHeatStats: null,
+  alarms: [],
   drawPending: false,
 };
 
@@ -41,6 +42,10 @@ const els = {
   mlAlert: document.getElementById("mlAlert"),
   mlAlertTitle: document.getElementById("mlAlertTitle"),
   mlAlertMeta: document.getElementById("mlAlertMeta"),
+  alarmMeta: document.getElementById("alarmMeta"),
+  alarmList: document.getElementById("alarmList"),
+  refreshAlarms: document.getElementById("refreshAlarms"),
+  clearAlarms: document.getElementById("clearAlarms"),
   datasetSamples: document.getElementById("datasetSamples"),
   datasetInfo: document.getElementById("datasetInfo"),
   datasetPath: document.getElementById("datasetPath"),
@@ -100,6 +105,17 @@ function formatDate(ms) {
     month: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
+  });
+}
+
+function formatDateTime(ms) {
+  if (!ms) return "--";
+  return new Date(ms).toLocaleString("tr-TR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
   });
 }
 
@@ -207,6 +223,9 @@ function updateStatus(payload) {
     els.logs.textContent = payload.logs.join("\n");
     if (els.logs.textContent) els.logs.scrollTop = els.logs.scrollHeight;
   }
+  if (payload.alarms) {
+    renderAlarms(payload.alarms);
+  }
 
   if (payload.latest) {
     const latest = payload.latest;
@@ -238,26 +257,118 @@ function updateMl(info) {
   if (!info.model) {
     els.mlAlert.className = "mlAlert idle";
     els.mlAlertTitle.textContent = "ML modeli yok";
-    els.mlAlertMeta.textContent = "hand_motion modeli yuklenmedi";
+    els.mlAlertMeta.textContent = info.error || "CNN/LSTM modeli yuklenmedi";
     return;
   }
-  const probability = Number(info.handMotionProbability || 0);
-  const pct = `${fmt(probability * 100, 0)}%`;
   if (info.label === "ısınıyor") {
     els.mlAlert.className = "mlAlert idle";
-    els.mlAlertTitle.textContent = "ML modeli hazırlanıyor";
-    els.mlAlertMeta.textContent = `${info.windowReady || 0}/${info.window || "--"} pencere`;
+    els.mlAlertTitle.textContent = "CNN/LSTM hazırlanıyor";
+    els.mlAlertMeta.textContent = `${info.windowReady || 0}/${info.window || "--"} pencere · ${info.tones || "--"} tone`;
     return;
   }
+  const confidence = Number(info.confidence || info.handMotionProbability || 0);
+  const pct = `${fmt(confidence * 100, 0)}%`;
+  const policy = info.alarmPolicy || {};
+  const gate = policy.confidence
+    ? ` · alarm eşiği ${fmt(Number(policy.confidence) * 100, 0)}%/${fmt(policy.motionScore, 2)} motion`
+    : "";
+  const suppressed = info.alarmSuppressed ? ` · filtre: ${info.alarmSuppressed}` : "";
+  const probs = info.probabilities
+    ? Object.entries(info.probabilities)
+        .sort((a, b) => Number(b[1]) - Number(a[1]))
+        .slice(0, 3)
+        .map(([label, value]) => `${label} ${fmt(Number(value) * 100, 0)}%`)
+        .join(" · ")
+    : "";
   if (info.active) {
     els.mlAlert.className = "mlAlert active";
-    els.mlAlertTitle.textContent = "El hareketi algılandı";
-    els.mlAlertMeta.textContent = `${info.model} · olasılık ${pct}`;
+    els.mlAlertTitle.textContent = `Alarm: ${info.label}`;
+    els.mlAlertMeta.textContent = `${info.model} · güven ${pct}${probs ? ` · ${probs}` : ""}${gate}`;
   } else {
     els.mlAlert.className = "mlAlert clear";
-    els.mlAlertTitle.textContent = "El hareketi yok";
-    els.mlAlertMeta.textContent = `${info.model} · hand_motion ${pct}`;
+    els.mlAlertTitle.textContent = `Normal: ${info.label || "bekliyor"}`;
+    els.mlAlertMeta.textContent = `${info.model} · güven ${pct}${probs ? ` · ${probs}` : ""}${gate}${suppressed}`;
   }
+}
+
+function renderAlarms(alarms) {
+  state.alarms = alarms || [];
+  els.alarmList.replaceChildren();
+  els.alarmMeta.textContent = state.alarms.length
+    ? `${state.alarms.length} alarm kaydı · son kayıt ${formatDateTime(state.alarms[0]?.ts)}`
+    : "Henüz alarm yok";
+  if (!state.alarms.length) {
+    const empty = document.createElement("div");
+    empty.className = "fileItem";
+    empty.textContent = "Alarm oluşmadı";
+    els.alarmList.appendChild(empty);
+    return;
+  }
+  for (const alarm of state.alarms) {
+    const row = document.createElement("div");
+    row.className = "alarmItem";
+
+    const badge = document.createElement("span");
+    badge.className = `alarmBadge ${alarm.label || ""}`;
+    badge.textContent = alarm.label || "alarm";
+
+    const info = document.createElement("div");
+    info.className = "alarmInfo";
+    const title = document.createElement("strong");
+    title.textContent = `${formatDateTime(alarm.ts)} · güven ${fmt(Number(alarm.confidence || 0) * 100, 0)}%`;
+    const meta = document.createElement("span");
+    meta.textContent =
+      `seq ${alarm.seq ?? "--"} · rssi ${alarm.rssi ?? "--"} · motion ${fmt(alarm.motionScore, 3)} · streak ${alarm.alarmStreak || 1} · ${alarm.model || "model"}`;
+    info.appendChild(title);
+    info.appendChild(meta);
+
+    const remove = document.createElement("button");
+    remove.className = "deleteButton";
+    remove.type = "button";
+    remove.textContent = "Sil";
+    remove.addEventListener("click", () => {
+      deleteAlarm(alarm.id);
+    });
+
+    row.appendChild(badge);
+    row.appendChild(info);
+    row.appendChild(remove);
+    els.alarmList.appendChild(row);
+  }
+}
+
+async function loadAlarms() {
+  try {
+    const res = await fetch("/api/alarms", { cache: "no-store" });
+    const payload = await res.json();
+    renderAlarms(payload.alarms || []);
+  } catch (error) {
+    els.alarmMeta.textContent = `alarm kayıtları okunamadı: ${error.message}`;
+  }
+}
+
+async function deleteAlarm(id) {
+  if (!id) return;
+  const res = await fetch("/api/delete-alarm", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id }),
+  });
+  const payload = await res.json();
+  renderAlarms(payload.alarms || []);
+}
+
+async function clearAlarms() {
+  if (!state.alarms.length) return;
+  const ok = window.confirm("Tüm alarm kayıtları silinsin mi?");
+  if (!ok) return;
+  const res = await fetch("/api/delete-alarm", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ all: true }),
+  });
+  const payload = await res.json();
+  renderAlarms(payload.alarms || []);
 }
 
 function renderFileList(container, files) {
@@ -518,6 +629,10 @@ function connectEvents() {
     const payload = JSON.parse(event.data);
     updateStatus(payload);
   });
+  events.addEventListener("alarm", (event) => {
+    const alarm = JSON.parse(event.data);
+    renderAlarms([alarm, ...state.alarms.filter((item) => item.id !== alarm.id)]);
+  });
   events.onerror = () => {
     els.runState.textContent = "Baglanti";
     els.runState.className = "pill error";
@@ -550,6 +665,14 @@ els.refreshFiles.addEventListener("click", () => {
   loadFiles();
 });
 
+els.refreshAlarms.addEventListener("click", () => {
+  loadAlarms();
+});
+
+els.clearAlarms.addEventListener("click", () => {
+  clearAlarms();
+});
+
 drawAmp([]);
 drawHeat();
 drawMotion();
@@ -557,3 +680,4 @@ updateChartMeta(null);
 connectEvents();
 fetch("/api/status").then((res) => res.json()).then(updateStatus).catch(() => {});
 loadFiles();
+loadAlarms();

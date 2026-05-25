@@ -59,6 +59,20 @@
         <span id="mlAlertMeta">hand_motion modeli yuklenmedi</span>
       </section>
 
+      <section class="alarmPanel" aria-label="alarm history">
+        <div class="panelHead">
+          <div>
+            <h2>Realtime alarm kayıtları</h2>
+            <p id="alarmMeta" class="pathLine">Henüz alarm yok</p>
+          </div>
+          <div class="panelActions">
+            <button id="refreshAlarms" class="smallButton">Yenile</button>
+            <button id="clearAlarms" class="smallButton dangerButton">Tümünü sil</button>
+          </div>
+        </div>
+        <div id="alarmList" class="alarmList"></div>
+      </section>
+
       <section class="metricGrid">
         <article class="metric">
           <span>Sinif</span>

@@ -15,6 +15,16 @@ from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import parse_qs, quote, unquote, urlparse
 
+try:
+    import torch
+    from torch import nn
+except Exception as exc:
+    torch = None
+    nn = None
+    TORCH_IMPORT_ERROR = str(exc)
+else:
+    TORCH_IMPORT_ERROR = None
+
 
 BASE_DIR = Path("/home/admin/csi")
 WEB_DIR = BASE_DIR / "webui"
@@ -22,15 +32,36 @@ CAPTURE_DIR = BASE_DIR / "captures"
 DATASET_DIR = BASE_DIR / "datasets"
 MODEL_DIR = BASE_DIR / "models"
 LIVE_MODEL_PATH = MODEL_DIR / "hand_motion_live_model.json"
+DEEP_MODEL_PATH = MODEL_DIR / "best_csi_cnn_lstm_temporal.pt"
+ALARM_DIR = BASE_DIR / "alarms"
+ALARM_LOG_PATH = ALARM_DIR / "alarm-events.ndjson"
 STREAM_SCRIPT = BASE_DIR / "start_rx_stream.sh"
 DEFAULT_CHANNEL = "48/80"
 DEFAULT_SOURCE_MAC = "88:a2:9e:5d:4e:a6"
 DEFAULT_DISTANCE_M = 2.0
 PUBLISH_INTERVAL_S = 0.10
 DATASET_FRAME_STRIDE = 12
+MODEL_INFER_STRIDE = DATASET_FRAME_STRIDE
 VISUAL_TONES = 96
 DATASET_TONES = 128
 MAX_LOG_LINES = 80
+ALARM_LABELS = {"passage", "hand_motion"}
+ALARM_COOLDOWN_S = 5.0
+ALARM_CONFIDENCE_THRESHOLD = 0.80
+ALARM_MIN_MOTION_SCORE = 0.05
+ALARM_MIN_PACKET_RATE = 5.0
+ALARM_STREAK_REQUIRED = 2
+
+
+def alarm_policy():
+    return {
+        "confidence": ALARM_CONFIDENCE_THRESHOLD,
+        "motionScore": ALARM_MIN_MOTION_SCORE,
+        "packetRate": ALARM_MIN_PACKET_RATE,
+        "streak": ALARM_STREAK_REQUIRED,
+        "cooldownS": ALARM_COOLDOWN_S,
+        "inferStride": MODEL_INFER_STRIDE,
+    }
 
 
 def now_ms():
@@ -126,6 +157,217 @@ def list_record_files():
         files.sort(key=lambda item: item["modifiedAt"], reverse=True)
         payload[kind] = files
     return payload
+
+
+class CsiCnnLstmLive(nn.Module if nn else object):
+    def __init__(self, tones, classes, conv_channels=32, hidden=64, dropout=0.35, bidirectional=True):
+        super().__init__()
+        self.encoder = nn.Sequential(
+            nn.Conv1d(1, conv_channels, kernel_size=7, padding=3),
+            nn.BatchNorm1d(conv_channels),
+            nn.GELU(),
+            nn.MaxPool1d(2),
+            nn.Dropout(dropout * 0.35),
+            nn.Conv1d(conv_channels, conv_channels * 2, kernel_size=5, padding=2),
+            nn.BatchNorm1d(conv_channels * 2),
+            nn.GELU(),
+            nn.AdaptiveAvgPool1d(16),
+            nn.Flatten(),
+        )
+        self.lstm = nn.LSTM(
+            conv_channels * 2 * 16,
+            hidden,
+            batch_first=True,
+            bidirectional=bidirectional,
+            dropout=0.0,
+        )
+        lstm_out = hidden * (2 if bidirectional else 1)
+        self.classifier = nn.Sequential(
+            nn.LayerNorm(lstm_out),
+            nn.Dropout(dropout),
+            nn.Linear(lstm_out, classes),
+        )
+
+    def forward(self, x):
+        batch, steps, tones = x.shape
+        x = x.reshape(batch * steps, 1, tones)
+        x = self.encoder(x)
+        x = x.reshape(batch, steps, -1)
+        out, _ = self.lstm(x)
+        return self.classifier(out[:, -1, :])
+
+
+class DeepCsiModel:
+    def __init__(self, path=DEEP_MODEL_PATH):
+        self.path = Path(path)
+        self.error = None
+        self.model_name = "csi_cnn_lstm_temporal_v2"
+        self.model = None
+        self.labels = []
+        self.window = 24
+        self.tones = DATASET_TONES
+        self.buffer = collections.deque(maxlen=self.window)
+        self._load()
+
+    def _load(self):
+        if torch is None or nn is None:
+            self.error = f"torch_missing: {TORCH_IMPORT_ERROR}"
+            return
+        if not self.path.exists():
+            self.error = f"model_missing: {self.path}"
+            return
+        try:
+            checkpoint = torch.load(str(self.path), map_location="cpu", weights_only=False)
+            self.model_name = str(checkpoint.get("model") or self.model_name)
+            self.labels = [str(label) for label in checkpoint.get("labels", [])]
+            self.window = int(checkpoint.get("window", 24))
+            self.tones = int(checkpoint.get("tones", DATASET_TONES))
+            bidirectional = bool(checkpoint.get("bidirectional", True))
+            self.model = CsiCnnLstmLive(
+                tones=self.tones,
+                classes=len(self.labels),
+                bidirectional=bidirectional,
+            )
+            self.model.load_state_dict(checkpoint["model_state"])
+            self.model.eval()
+            self.buffer = collections.deque(maxlen=self.window)
+        except Exception as exc:
+            self.model = None
+            self.error = f"model_load_failed: {exc}"
+
+    def clear(self):
+        self.buffer.clear()
+
+    def status(self):
+        if self.model is None:
+            return {
+                "model": None,
+                "label": "model_yok",
+                "active": False,
+                "confidence": 0.0,
+                "error": self.error,
+                "windowReady": len(self.buffer),
+                "window": self.window,
+                "tones": self.tones,
+            }
+        return {
+            "model": self.model_name,
+            "label": "hazir",
+            "active": False,
+            "confidence": 0.0,
+            "windowReady": len(self.buffer),
+            "window": self.window,
+            "tones": self.tones,
+            "labels": self.labels,
+            "alarmLabels": sorted(ALARM_LABELS),
+            "alarmPolicy": alarm_policy(),
+        }
+
+    def infer(self, amps):
+        if self.model is None:
+            return self.status()
+        series = log_amp_series(downsample(amps, self.tones))
+        if len(series) != self.tones:
+            return {
+                **self.status(),
+                "label": "boyut_hatasi",
+                "error": f"expected {self.tones} tones, got {len(series)}",
+            }
+        self.buffer.append(series)
+        if len(self.buffer) < self.window:
+            return {
+                "model": self.model_name,
+                "label": "ısınıyor",
+                "active": False,
+                "confidence": 0.0,
+                "windowReady": len(self.buffer),
+                "window": self.window,
+                "tones": self.tones,
+                "labels": self.labels,
+                "alarmLabels": sorted(ALARM_LABELS),
+                "alarmPolicy": alarm_policy(),
+            }
+        matrix = torch.tensor(list(self.buffer), dtype=torch.float32)
+        matrix = (matrix - matrix.mean(dim=0, keepdim=True)) / (
+            matrix.std(dim=0, keepdim=True, unbiased=False) + 1e-6
+        )
+        with torch.no_grad():
+            logits = self.model(matrix.unsqueeze(0))
+            probs = torch.softmax(logits, dim=1).squeeze(0).cpu().tolist()
+        best_idx = max(range(len(probs)), key=lambda idx: probs[idx])
+        label = self.labels[best_idx]
+        confidence = float(probs[best_idx])
+        return {
+            "model": self.model_name,
+            "label": label,
+            "active": label in ALARM_LABELS,
+            "confidence": confidence,
+            "probabilities": {
+                self.labels[idx]: round(float(prob), 4)
+                for idx, prob in enumerate(probs)
+            },
+            "windowReady": len(self.buffer),
+            "window": self.window,
+            "tones": self.tones,
+            "labels": self.labels,
+            "alarmLabels": sorted(ALARM_LABELS),
+            "alarmPolicy": alarm_policy(),
+        }
+
+
+class AlarmStore:
+    def __init__(self, path=ALARM_LOG_PATH, max_cache=250):
+        self.path = Path(path)
+        self.max_cache = max_cache
+        self.lock = threading.RLock()
+        self.events = collections.deque(maxlen=max_cache)
+        self._load()
+
+    def _load(self):
+        self.events.clear()
+        if not self.path.exists():
+            return
+        try:
+            rows = []
+            with self.path.open("r", encoding="utf-8") as handle:
+                for line in handle:
+                    if line.strip():
+                        rows.append(json.loads(line))
+            for row in rows[-self.max_cache:]:
+                self.events.append(row)
+        except Exception:
+            self.events.clear()
+
+    def list(self):
+        with self.lock:
+            return list(reversed(self.events))
+
+    def append(self, event):
+        with self.lock:
+            ALARM_DIR.mkdir(parents=True, exist_ok=True)
+            self.events.append(event)
+            with self.path.open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n")
+            return event
+
+    def delete(self, alarm_id):
+        with self.lock:
+            kept = [event for event in self.events if event.get("id") != alarm_id]
+            removed = len(kept) != len(self.events)
+            self.events = collections.deque(kept, maxlen=self.max_cache)
+            self._rewrite()
+            return removed
+
+    def clear(self):
+        with self.lock:
+            self.events.clear()
+            self._rewrite()
+
+    def _rewrite(self):
+        ALARM_DIR.mkdir(parents=True, exist_ok=True)
+        with self.path.open("w", encoding="utf-8") as handle:
+            for event in self.events:
+                handle.write(json.dumps(event, ensure_ascii=False, separators=(",", ":")) + "\n")
 
 
 def load_live_model():
@@ -303,6 +545,12 @@ class CaptureManager:
         self.packet_times = collections.deque()
         self.ml_window = collections.deque()
         self.ml_model = load_live_model()
+        self.deep_model = DeepCsiModel()
+        self.last_alarm_at = {}
+        self.last_model_result = None
+        self.inference_frame_counter = 0
+        self.alarm_streak_label = None
+        self.alarm_streak_count = 0
         self.last_amps = None
         self.last_publish = 0.0
         self.dataset_frame_counter = 0
@@ -318,6 +566,7 @@ class CaptureManager:
             "motionScore": 0.0,
             "latest": None,
             "ml": None,
+            "alarms": [],
             "error": None,
             "capturePath": None,
             "datasetPath": None,
@@ -325,6 +574,7 @@ class CaptureManager:
             "stoppedAt": None,
         }
         self.state["ml"] = self._model_status_locked()
+        self.state["alarms"] = ALARMS.list()
 
     def start(
         self,
@@ -342,6 +592,13 @@ class CaptureManager:
             self.packet_times.clear()
             self.ml_window.clear()
             self.ml_model = load_live_model()
+            self.deep_model = DeepCsiModel()
+            self.deep_model.clear()
+            self.last_alarm_at.clear()
+            self.last_model_result = None
+            self.inference_frame_counter = 0
+            self.alarm_streak_label = None
+            self.alarm_streak_count = 0
             self.last_amps = None
             self.last_publish = 0.0
             self.dataset_frame_counter = 0
@@ -366,6 +623,7 @@ class CaptureManager:
                 "motionScore": 0.0,
                 "latest": None,
                 "ml": self._model_status_locked(),
+                "alarms": ALARMS.list(),
                 "error": None,
                 "capturePath": str(self.capture_path),
                 "datasetPath": str(self.dataset_path) if self.dataset_path else None,
@@ -404,9 +662,14 @@ class CaptureManager:
         payload = dict(self.state)
         payload["params"] = dict(self.params)
         payload["logs"] = list(self.logs)[-20:]
+        payload["alarms"] = ALARMS.list()
         return payload
 
     def _model_status_locked(self):
+        if self.deep_model:
+            status = self.deep_model.status()
+            if status.get("model") or status.get("error"):
+                return status
         if not self.ml_model:
             return {
                 "model": None,
@@ -648,6 +911,101 @@ class CaptureManager:
             "window": window,
         }
 
+    def _infer_model(self, sample, motion):
+        if self.deep_model:
+            self.inference_frame_counter += 1
+            should_infer = (
+                self.inference_frame_counter == 1
+                or self.inference_frame_counter % MODEL_INFER_STRIDE == 0
+                or not self.last_model_result
+            )
+            if should_infer:
+                result = self.deep_model.infer(sample["amps"])
+                result["skipped"] = False
+                result["inferenceStride"] = MODEL_INFER_STRIDE
+                result["alarmPolicy"] = alarm_policy()
+                self.last_model_result = dict(result)
+            else:
+                result = dict(self.last_model_result)
+                result["skipped"] = True
+                result["windowReady"] = len(self.deep_model.buffer)
+                result["inferenceStride"] = MODEL_INFER_STRIDE
+                result["alarmPolicy"] = alarm_policy()
+            if result.get("model") or result.get("error"):
+                return result
+        return self._infer_live_model(motion)
+
+    def _maybe_record_alarm(self, sample, info):
+        if not info:
+            return None
+        raw_active = bool(info.get("active"))
+        info["rawActive"] = raw_active
+        info["alarmPolicy"] = alarm_policy()
+        if info.get("skipped"):
+            info["active"] = False
+            info["alarmSuppressed"] = "stride"
+            return None
+        label = str(info.get("label") or "")
+        if not raw_active or label not in ALARM_LABELS:
+            info["active"] = False
+            self.alarm_streak_label = None
+            self.alarm_streak_count = 0
+            return None
+        confidence = float(info.get("confidence") or 0.0)
+        motion_score = float(sample.get("motionScore") or 0.0)
+        packet_rate = float(sample.get("packetRate") or 0.0)
+        suppress_reason = None
+        if confidence < ALARM_CONFIDENCE_THRESHOLD:
+            suppress_reason = "low_confidence"
+        elif motion_score < ALARM_MIN_MOTION_SCORE:
+            suppress_reason = "low_motion"
+        elif packet_rate < ALARM_MIN_PACKET_RATE:
+            suppress_reason = "low_packet_rate"
+        if suppress_reason:
+            info["active"] = False
+            info["alarmSuppressed"] = suppress_reason
+            self.alarm_streak_label = None
+            self.alarm_streak_count = 0
+            return None
+        if label == self.alarm_streak_label:
+            self.alarm_streak_count += 1
+        else:
+            self.alarm_streak_label = label
+            self.alarm_streak_count = 1
+        info["alarmStreak"] = self.alarm_streak_count
+        if self.alarm_streak_count < ALARM_STREAK_REQUIRED:
+            info["active"] = False
+            info["alarmSuppressed"] = "streak"
+            return None
+        info["active"] = True
+        now = time.time()
+        previous = self.last_alarm_at.get(label, 0.0)
+        if now - previous < ALARM_COOLDOWN_S:
+            info["alarmSuppressed"] = "cooldown"
+            return None
+        self.last_alarm_at[label] = now
+        event = {
+            "id": f"{now_ms()}-{sample.get('seq', 'na')}-{label}",
+            "ts": now_ms(),
+            "label": label,
+            "confidence": round(confidence, 4),
+            "model": info.get("model"),
+            "window": info.get("window"),
+            "alarmStreak": self.alarm_streak_count,
+            "alarmPolicy": alarm_policy(),
+            "sourceMac": sample.get("sourceMac"),
+            "seq": sample.get("seq"),
+            "rssi": sample.get("rssi"),
+            "motionScore": round(motion_score, 5),
+            "packetRate": round(packet_rate, 2),
+            "probabilities": info.get("probabilities") or {},
+        }
+        ALARMS.append(event)
+        with self.lock:
+            self.state["alarms"] = ALARMS.list()
+        self.hub.publish("alarm", event)
+        return event
+
     def _handle_sample(self, sample):
         t = time.time()
         self.packet_times.append(t)
@@ -665,7 +1023,8 @@ class CaptureManager:
         sample["packetRate"] = packet_rate
         sample["motionScore"] = motion
         sample["classification"] = classify(motion, sample["avgAmp"], packet_rate)
-        sample["ml"] = self._infer_live_model(motion)
+        sample["ml"] = self._infer_model(sample, motion)
+        self._maybe_record_alarm(sample, sample["ml"])
         self._write_dataset_sample(sample, motion, packet_rate)
 
         with self.lock:
@@ -700,6 +1059,7 @@ def downsample(values, count):
 
 
 HUB = EventHub()
+ALARMS = AlarmStore()
 CAPTURE = CaptureManager(HUB)
 
 
@@ -718,6 +1078,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send_json(CAPTURE.status())
         elif parsed.path == "/api/files":
             self._send_json(list_record_files())
+        elif parsed.path == "/api/alarms":
+            self._send_json({"alarms": ALARMS.list()})
         elif parsed.path == "/download":
             params = parse_qs(parsed.query)
             kind = (params.get("kind") or [""])[0]
@@ -762,6 +1124,19 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_error(HTTPStatus.INTERNAL_SERVER_ERROR, str(exc))
                 return
             self._send_json({"ok": True, "kind": kind, "name": name, "files": list_record_files()})
+        elif parsed.path == "/api/delete-alarm":
+            if data.get("all"):
+                ALARMS.clear()
+                CAPTURE.hub.publish("status", CAPTURE.status())
+                self._send_json({"ok": True, "alarms": []})
+                return
+            alarm_id = str(data.get("id", ""))
+            if not alarm_id:
+                self.send_error(HTTPStatus.BAD_REQUEST, "missing alarm id")
+                return
+            removed = ALARMS.delete(alarm_id)
+            CAPTURE.hub.publish("status", CAPTURE.status())
+            self._send_json({"ok": removed, "alarms": ALARMS.list()})
         else:
             self.send_error(HTTPStatus.NOT_FOUND)
 
@@ -849,6 +1224,7 @@ def main():
     CAPTURE_DIR.mkdir(parents=True, exist_ok=True)
     DATASET_DIR.mkdir(parents=True, exist_ok=True)
     MODEL_DIR.mkdir(parents=True, exist_ok=True)
+    ALARM_DIR.mkdir(parents=True, exist_ok=True)
     httpd = ThreadingHTTPServer((args.host, args.port), Handler)
     print(f"CSI web UI listening on http://{args.host}:{args.port}", flush=True)
     try:

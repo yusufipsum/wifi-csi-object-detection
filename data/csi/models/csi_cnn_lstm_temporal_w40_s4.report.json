@@ -1,0 +1,598 @@
+{
+  "labels": [
+    "empty",
+    "hand_motion",
+    "passage",
+    "sit",
+    "stand"
+  ],
+  "dataset": "data/csi/csi_temporal_w40_s4.npz",
+  "output": "data/csi/models/csi_cnn_lstm_temporal_w40_s4.pt",
+  "device": "mps",
+  "epochsRequested": 80,
+  "epochsRun": 21,
+  "bestEpoch": 9,
+  "classWeights": {
+    "empty": 0.6665085554122925,
+    "hand_motion": 1.2540284395217896,
+    "passage": 0.7032241821289062,
+    "sit": 1.3848427534103394,
+    "stand": 0.9913964867591858
+  },
+  "validation": {
+    "accuracy": 0.9911504424778761,
+    "macroF1": 0.9713261648745519,
+    "total": 113,
+    "correct": 112,
+    "perClass": [
+      {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 48
+      },
+      {
+        "precision": 1.0,
+        "recall": 0.8,
+        "f1": 0.888888888888889,
+        "support": 5
+      },
+      {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 42
+      },
+      {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 3
+      },
+      {
+        "precision": 0.9375,
+        "recall": 1.0,
+        "f1": 0.967741935483871,
+        "support": 15
+      }
+    ],
+    "loss": 0.11097172258702
+  },
+  "validationConfusion": [
+    [
+      48,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      4,
+      0,
+      0,
+      1
+    ],
+    [
+      0,
+      0,
+      42,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      3,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      15
+    ]
+  ],
+  "test": {
+    "accuracy": 0.8407079646017699,
+    "macroF1": 0.5748480598410473,
+    "total": 113,
+    "correct": 95,
+    "perClass": [
+      {
+        "precision": 1.0,
+        "recall": 0.9166666666666666,
+        "f1": 0.9565217391304348,
+        "support": 48
+      },
+      {
+        "precision": 0.5,
+        "recall": 1.0,
+        "f1": 0.6666666666666666,
+        "support": 5
+      },
+      {
+        "precision": 0.8235294117647058,
+        "recall": 1.0,
+        "f1": 0.9032258064516129,
+        "support": 42
+      },
+      {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "support": 3
+      },
+      {
+        "precision": 0.5,
+        "recall": 0.26666666666666666,
+        "f1": 0.3478260869565218,
+        "support": 15
+      }
+    ],
+    "loss": 0.35123369968042967
+  },
+  "testConfusion": [
+    [
+      44,
+      0,
+      0,
+      0,
+      4
+    ],
+    [
+      0,
+      5,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      42,
+      0,
+      0
+    ],
+    [
+      0,
+      3,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      2,
+      9,
+      0,
+      4
+    ]
+  ],
+  "history": [
+    {
+      "epoch": 1,
+      "trainLoss": 1.2186629417144805,
+      "valAccuracy": 0.7610619469026548,
+      "valMacroF1": 0.546704654895666,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 2,
+      "trainLoss": 0.7775063529992715,
+      "valAccuracy": 0.8672566371681416,
+      "valMacroF1": 0.6782608695652174,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 3,
+      "trainLoss": 0.5586386006729608,
+      "valAccuracy": 0.8849557522123894,
+      "valMacroF1": 0.7207070707070706,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 4,
+      "trainLoss": 0.3873859204249034,
+      "valAccuracy": 0.8938053097345132,
+      "valMacroF1": 0.7061904761904763,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 5,
+      "trainLoss": 0.3141107033695695,
+      "valAccuracy": 0.8849557522123894,
+      "valMacroF1": 0.6990567986230637,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 6,
+      "trainLoss": 0.23196695098392592,
+      "valAccuracy": 0.911504424778761,
+      "valMacroF1": 0.7745252163856815,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 7,
+      "trainLoss": 0.17393893159235252,
+      "valAccuracy": 0.9557522123893806,
+      "valMacroF1": 0.8135960591133007,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 8,
+      "trainLoss": 0.1230588824556189,
+      "valAccuracy": 0.9026548672566371,
+      "valMacroF1": 0.7357244607244608,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 9,
+      "trainLoss": 0.09065422715520012,
+      "valAccuracy": 0.9911504424778761,
+      "valMacroF1": 0.9713261648745519,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 10,
+      "trainLoss": 0.06135089253856115,
+      "valAccuracy": 0.9469026548672567,
+      "valMacroF1": 0.8259687371452078,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 11,
+      "trainLoss": 0.04651941240010177,
+      "valAccuracy": 0.9469026548672567,
+      "valMacroF1": 0.8220538720538719,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 12,
+      "trainLoss": 0.044021753766950535,
+      "valAccuracy": 0.9734513274336283,
+      "valMacroF1": 0.8764367816091954,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 13,
+      "trainLoss": 0.04393840551053044,
+      "valAccuracy": 0.9823008849557522,
+      "valMacroF1": 0.9149769585253456,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 14,
+      "trainLoss": 0.022782250195447745,
+      "valAccuracy": 0.9734513274336283,
+      "valMacroF1": 0.8578341013824886,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 15,
+      "trainLoss": 0.02107010327125266,
+      "valAccuracy": 0.9734513274336283,
+      "valMacroF1": 0.8578341013824886,
+      "lr": 0.00035
+    },
+    {
+      "epoch": 16,
+      "trainLoss": 0.017266523717540727,
+      "valAccuracy": 0.9734513274336283,
+      "valMacroF1": 0.8578341013824886,
+      "lr": 0.00035
+    },
+    {
+      "epoch": 17,
+      "trainLoss": 0.011983664278345112,
+      "valAccuracy": 0.9734513274336283,
+      "valMacroF1": 0.8578341013824886,
+      "lr": 0.00035
+    },
+    {
+      "epoch": 18,
+      "trainLoss": 0.012173631057672246,
+      "valAccuracy": 0.9823008849557522,
+      "valMacroF1": 0.9149769585253456,
+      "lr": 0.00035
+    },
+    {
+      "epoch": 19,
+      "trainLoss": 0.01234642315575122,
+      "valAccuracy": 0.9734513274336283,
+      "valMacroF1": 0.8578341013824886,
+      "lr": 0.00035
+    },
+    {
+      "epoch": 20,
+      "trainLoss": 0.0117385959486005,
+      "valAccuracy": 0.9823008849557522,
+      "valMacroF1": 0.9,
+      "lr": 0.00035
+    },
+    {
+      "epoch": 21,
+      "trainLoss": 0.008377113434645905,
+      "valAccuracy": 0.9911504424778761,
+      "valMacroF1": 0.9492063492063492,
+      "lr": 0.000175
+    }
+  ],
+  "splitReport": {
+    "window": 40,
+    "stride": 4,
+    "trainRatio": 0.6,
+    "valRatio": 0.2,
+    "testRatio": 0.2,
+    "purge": 20,
+    "sessions": [
+      {
+        "path": "data/csi/raw/empty-20260525-001442.ndjson",
+        "label": "empty",
+        "samples": 1246,
+        "durationSeconds": 3328.001,
+        "tones": 128,
+        "splitBounds": {
+          "train": [
+            0,
+            747
+          ],
+          "val": [
+            767,
+            996
+          ],
+          "test": [
+            1016,
+            1246
+          ]
+        },
+        "windows": {
+          "train": 177,
+          "val": 48,
+          "test": 48
+        },
+        "packetRate": {
+          "mean": 3.173354735152488,
+          "min": 1.0,
+          "max": 22.0
+        },
+        "motionScore": {
+          "mean": 0.07631594703049759,
+          "min": 0.0042,
+          "max": 0.5358
+        },
+        "rssi": {
+          "mean": -43.881219903691814,
+          "min": -45.0,
+          "max": -42.0
+        },
+        "meta": {
+          "type": "session",
+          "createdAt": 1779657282539,
+          "channel": "48/80",
+          "sourceMac": "88:a2:9e:5d:4e:a6",
+          "distanceM": 2.0,
+          "label": "empty",
+          "note": "",
+          "pcap": "/home/admin/csi/captures/csi-alpha-web-20260525-001442.pcap",
+          "tones": 128,
+          "feature": "log10_amplitude"
+        }
+      },
+      {
+        "path": "data/csi/raw/hand_motion-20260525-015623.ndjson",
+        "label": "hand_motion",
+        "samples": 394,
+        "durationSeconds": 874.515,
+        "tones": 128,
+        "splitBounds": {
+          "train": [
+            0,
+            236
+          ],
+          "val": [
+            256,
+            315
+          ],
+          "test": [
+            335,
+            394
+          ]
+        },
+        "windows": {
+          "train": 50,
+          "val": 5,
+          "test": 5
+        },
+        "packetRate": {
+          "mean": 5.258883248730965,
+          "min": 1.0,
+          "max": 52.0
+        },
+        "motionScore": {
+          "mean": 0.10646857868020304,
+          "min": 0.00815,
+          "max": 0.52465
+        },
+        "rssi": {
+          "mean": -47.213197969543145,
+          "min": -54.0,
+          "max": -43.0
+        },
+        "meta": {
+          "type": "session",
+          "createdAt": 1779663383695,
+          "channel": "48/80",
+          "sourceMac": "88:a2:9e:5d:4e:a6",
+          "distanceM": 2.0,
+          "label": "hand_motion",
+          "note": "curl",
+          "pcap": "/home/admin/csi/captures/csi-alpha-web-20260525-015623.pcap",
+          "tones": 128,
+          "feature": "log10_amplitude"
+        }
+      },
+      {
+        "path": "data/csi/raw/passage-20260525-021502.ndjson",
+        "label": "passage",
+        "samples": 1121,
+        "durationSeconds": 935.934,
+        "tones": 128,
+        "splitBounds": {
+          "train": [
+            0,
+            672
+          ],
+          "val": [
+            692,
+            896
+          ],
+          "test": [
+            916,
+            1121
+          ]
+        },
+        "windows": {
+          "train": 159,
+          "val": 42,
+          "test": 42
+        },
+        "packetRate": {
+          "mean": 15.179304192685102,
+          "min": 1.0,
+          "max": 90.0
+        },
+        "motionScore": {
+          "mean": 0.10538423728813559,
+          "min": 0.00588,
+          "max": 0.49524
+        },
+        "rssi": {
+          "mean": -46.86351471900089,
+          "min": -55.0,
+          "max": -41.0
+        },
+        "meta": {
+          "type": "session",
+          "createdAt": 1779664502097,
+          "channel": "48/80",
+          "sourceMac": "88:a2:9e:5d:4e:a6",
+          "distanceM": 2.0,
+          "label": "passage",
+          "note": "15-20snlik gir cik islemi",
+          "pcap": "/home/admin/csi/captures/csi-alpha-web-20260525-021502.pcap",
+          "tones": 128,
+          "feature": "log10_amplitude"
+        }
+      },
+      {
+        "path": "data/csi/raw/sit-20260525-011707.ndjson",
+        "label": "sit",
+        "samples": 338,
+        "durationSeconds": 902.143,
+        "tones": 128,
+        "splitBounds": {
+          "train": [
+            0,
+            202
+          ],
+          "val": [
+            222,
+            270
+          ],
+          "test": [
+            290,
+            338
+          ]
+        },
+        "windows": {
+          "train": 41,
+          "val": 3,
+          "test": 3
+        },
+        "packetRate": {
+          "mean": 4.331360946745562,
+          "min": 1.0,
+          "max": 89.0
+        },
+        "motionScore": {
+          "mean": 0.0775555325443787,
+          "min": 0.00547,
+          "max": 0.3961
+        },
+        "rssi": {
+          "mean": -48.89940828402367,
+          "min": -50.0,
+          "max": -46.0
+        },
+        "meta": {
+          "type": "session",
+          "createdAt": 1779661027091,
+          "channel": "48/80",
+          "sourceMac": "88:a2:9e:5d:4e:a6",
+          "distanceM": 2.0,
+          "label": "sit",
+          "note": "",
+          "pcap": "/home/admin/csi/captures/csi-alpha-web-20260525-011707.pcap",
+          "tones": 128,
+          "feature": "log10_amplitude"
+        }
+      },
+      {
+        "path": "data/csi/raw/stand-20260525-013521.ndjson",
+        "label": "stand",
+        "samples": 594,
+        "durationSeconds": 1182.717,
+        "tones": 128,
+        "splitBounds": {
+          "train": [
+            0,
+            356
+          ],
+          "val": [
+            376,
+            475
+          ],
+          "test": [
+            495,
+            594
+          ]
+        },
+        "windows": {
+          "train": 80,
+          "val": 15,
+          "test": 15
+        },
+        "packetRate": {
+          "mean": 8.333333333333334,
+          "min": 1.0,
+          "max": 103.0
+        },
+        "motionScore": {
+          "mean": 0.08588309764309765,
+          "min": 0.00464,
+          "max": 0.86343
+        },
+        "rssi": {
+          "mean": -47.215488215488215,
+          "min": -50.0,
+          "max": -43.0
+        },
+        "meta": {
+          "type": "session",
+          "createdAt": 1779662121310,
+          "channel": "48/80",
+          "sourceMac": "88:a2:9e:5d:4e:a6",
+          "distanceM": 2.0,
+          "label": "stand",
+          "note": "",
+          "pcap": "/home/admin/csi/captures/csi-alpha-web-20260525-013521.pcap",
+          "tones": 128,
+          "feature": "log10_amplitude"
+        }
+      }
+    ]
+  }
+}
