@@ -52,7 +52,9 @@ Alpha tarafındaki ana dosyalar:
 /home/admin/csi/webui/index.html
 /home/admin/csi/webui/app.js
 /home/admin/csi/webui/style.css
+/home/admin/csi/models/best_csi_cnn_lstm_temporal.pt
 /home/admin/csi/models/hand_motion_live_model.json
+/home/admin/csi/alarms/alarm-events.ndjson
 /home/admin/csi/captures/*.pcap
 /home/admin/csi/datasets/*.ndjson
 ```
@@ -62,6 +64,8 @@ Bilgisayar tarafındaki ML araçları:
 ```text
 tools/csi_ml/prepare_dataset.py
 tools/csi_ml/train_cnn_lstm.py
+tools/csi_ml/prepare_temporal_splits.py
+tools/csi_ml/train_temporal_cnn_lstm.py
 tools/csi_ml/requirements.txt
 tools/csi_ml/README.md
 ```
@@ -120,7 +124,7 @@ Backend ardışık CSI amplitüd vektörleri arasındaki farkı ölçer:
 motionScore = mean(abs(current_amp - previous_amp)) / mean(previous_amp)
 ```
 
-Bu değer tek başına nihai model değildir; ama canlı hareket yoğunluğu için hızlı bir göstergedir. Ayrıca geçici canlı el hareketi modelinde pencere özellikleri olarak kullanılır.
+Bu değer tek başına nihai model değildir; ama canlı hareket yoğunluğu için hızlı bir göstergedir. Güncel sistemde CNN/LSTM kararını destekleyen alarm kapısında kullanılır; eski hafif prototip modelde ise pencere özelliği olarak kullanılmıştı.
 
 
 ## CNN ve LSTM Neden Kullanılır?
@@ -133,10 +137,10 @@ CSI verisi iki boyutlu bir yapıya benzer:
 El hareketi tek bir CSI paketinde her zaman net görünmeyebilir. Asıl bilgi çoğu zaman zaman içinde oluşan örüntüdedir. Bu yüzden model pencerelerle çalışır:
 
 ```text
-window = 64 frame x 128 tone
+window = 24 frame x 128 tone
 ```
 
-Bu matris, kısa bir zaman kesitindeki kanal davranışını temsil eder.
+Bu matris, kısa bir zaman kesitindeki kanal davranışını temsil eder. Seçilen çıkış modelinde pencere uzunluğu 24 örnektir; her örnek 128 tone/subcarrier amplitüd değerinden oluşur.
 
 ### CNN Katmanı
 
@@ -148,7 +152,7 @@ CNN, her frame içindeki subcarrier örüntüsünü öğrenir.
 - frekans boyunca dalgalanma şekli
 - sinyaldeki lokal bozulmalar
 
-`train_cnn_lstm.py` içinde CNN kısmı kabaca şunu yapar:
+`train_temporal_cnn_lstm.py` içinde CNN kısmı kabaca şunu yapar:
 
 1. Her CSI frame'i `1 x tones` sinyal gibi ele alır.
 2. 1D convolution ile frekans eksenindeki lokal örüntüleri çıkarır.
@@ -194,12 +198,12 @@ S: Alt taşıyıcı (Subcarrier) sayısı
 
 ## Eğitim Pipeline'ı
 
-1. WebUI'da etiket seçilir: örneğin `stable` veya `hand_motion`.
+1. WebUI'da etiket seçilir: örneğin `empty`, `sit`, `stand`, `passage` veya `hand_motion`.
 2. `Başlat` ile kayıt alınır.
 3. WebUI pcap ve ndjson üretir.
 4. NDJSON dosyaları bilgisayara indirilir.
-5. `prepare_dataset.py` sabit uzunlukta pencereler üretir.
-6. `train_cnn_lstm.py` CNN/LSTM modelini eğitir.
+5. `prepare_temporal_splits.py` zaman sırasını koruyarak train/validation/test pencereleri üretir.
+6. `train_temporal_cnn_lstm.py` CNN/LSTM modelini eğitir.
 
 Komutlar:
 
@@ -212,13 +216,153 @@ python3 -m venv .venv-csi
 source .venv-csi/bin/activate
 pip install -r tools/csi_ml/requirements.txt
 
-python tools/csi_ml/prepare_dataset.py data/csi/raw -o data/csi/csi_dataset.npz --window 64 --stride 16
-python tools/csi_ml/train_cnn_lstm.py data/csi/csi_dataset.npz -o data/csi/csi_cnn_lstm.pt --epochs 30
+python tools/csi_ml/prepare_temporal_splits.py data/csi/raw \
+  -o data/csi/csi_temporal_w24_s4.npz \
+  --window 24 \
+  --stride 4 \
+  --train-ratio 0.60 \
+  --val-ratio 0.20 \
+  --purge 16
+
+python tools/csi_ml/train_temporal_cnn_lstm.py data/csi/csi_temporal_w24_s4.npz \
+  -o data/csi/models/best_csi_cnn_lstm_temporal.pt \
+  --epochs 80 \
+  --patience 14
 ```
 
 ## Canlı WebUI'da Şu An Hangi Model Çalışıyor?
 
-Canlı WebUI'da şu an PyTorch CNN/LSTM doğrudan çalışmıyor. Bunun yerine, `stable` ve `hand_motion` kayıtlarından öğrenilmiş hafif bir model çalışıyor:
+Son durumda canlı WebUI doğrudan eğitilmiş PyTorch CNN/LSTM modelini kullanır:
+
+```text
+/home/admin/csi/models/best_csi_cnn_lstm_temporal.pt
+```
+
+Model adı:
+
+```text
+csi_cnn_lstm_temporal_v2
+```
+
+Canlı sistemde çalışan sınıflar:
+
+```text
+empty
+hand_motion
+passage
+sit
+stand
+```
+
+Alarm sınıfları:
+
+```text
+hand_motion
+passage
+```
+
+Normal kabul edilen sınıflar:
+
+```text
+empty
+sit
+stand
+```
+
+### Canlı Model Nasıl Karar Veriyor?
+
+Backend her CSI paketinden amplitüd dizisini alır ve eğitimdeki gibi 128 tone'a indirger:
+
+```python
+series = log_amp_series(downsample(amps, 128))
+```
+
+Ardından son 24 örneklik pencere tutulur:
+
+```python
+self.buffer = collections.deque(maxlen=24)
+self.buffer.append(series)
+```
+
+Pencere dolmadan model karar vermez; WebUI bunu "CNN/LSTM hazırlanıyor" olarak gösterir. Pencere dolduğunda matris tone bazında normalize edilir:
+
+```python
+matrix = torch.tensor(list(self.buffer), dtype=torch.float32)
+matrix = (matrix - matrix.mean(dim=0, keepdim=True)) / (
+    matrix.std(dim=0, keepdim=True, unbiased=False) + 1e-6
+)
+```
+
+Bu normalize matrisin boyutu:
+
+```text
+24 zaman adımı x 128 tone
+```
+
+Sonra model çalıştırılır:
+
+```python
+logits = model(matrix.unsqueeze(0))
+probs = torch.softmax(logits, dim=1)
+label = labels[argmax(probs)]
+confidence = max(probs)
+```
+
+Modelin çıktısı WebUI'a şu alanlarla gider:
+
+```json
+{
+  "model": "csi_cnn_lstm_temporal_v2",
+  "label": "passage",
+  "confidence": 0.94,
+  "probabilities": {
+    "empty": 0.01,
+    "hand_motion": 0.03,
+    "passage": 0.94,
+    "sit": 0.00,
+    "stand": 0.02
+  },
+  "window": 24,
+  "tones": 128
+}
+```
+
+### Realtime Inference Temposu
+
+Eğitim verisi WebUI tarafından her 12 CSI frame'inde bir örnek yazılarak oluşturuldu. Bu yüzden canlı backend de modeli her frame'de değil, aynı tempoya yakın olacak şekilde 12 frame'de bir çalıştırır:
+
+```python
+MODEL_INFER_STRIDE = 12
+```
+
+Bu kritik bir ayrıntıdır. Model her frame'de çalıştırılırsa 24 örneklik pencere eğitimdekinden çok daha kısa bir fiziksel zamana karşılık gelir ve boş odada yanlış alarm ihtimali artar.
+
+### Alarm Kapısı
+
+Modelin bir sınıfı `hand_motion` veya `passage` seçmesi tek başına alarm kaydı üretmez. Yanlış pozitifleri azaltmak için ek kapı uygulanır:
+
+```text
+confidence >= 0.80
+motionScore >= 0.05
+packetRate >= 5 pkt/s
+aynı alarm etiketi art arda en az 2 kez
+aynı etiket için 5 saniye cooldown
+```
+
+Bu kapıdan geçmeyen tahminler WebUI'da etiket olarak görülebilir, ancak alarm kayıt listesine yazılmaz. Bastırma sebepleri şunlardır:
+
+```text
+low_confidence
+low_motion
+low_packet_rate
+streak
+stride
+cooldown
+```
+
+## Önceki Hafif Prototip Model
+
+İlk prototipte, PyTorch CNN/LSTM canlıya bağlanmadan önce `stable` ve `hand_motion` kayıtlarından öğrenilmiş hafif bir model kullanılmıştı:
 
 ```text
 /home/admin/csi/models/hand_motion_live_model.json
@@ -271,11 +415,11 @@ Bu yüzden canlı sistemde küçük bir lojistik model kullanıldı. Bu model, C
 - WebUI canlı tahmin, confidence ve alarm gösterebiliyor.
 - Veri toplama, eğitim ve deployment döngüsü çalışıyor.
 
-Sunumda bunu "CNN/LSTM'e hazırlık için canlı prototip modeli" olarak anlatmak doğru olur.
+Sunumda bunu "CNN/LSTM'e hazırlık için kullanılan ilk canlı prototip modeli" olarak anlatmak doğru olur. Güncel sistemde asıl canlı karar mekanizması PyTorch CNN/LSTM modelidir.
 
-### Model Dosyası Nasıl Görünüyor?
+### Önceki Hafif Model Dosyası Nasıl Görünüyordu?
 
-Canlı model tek bir JSON dosyasıdır. Pi tarafında ekstra ML kütüphanesi gerektirmez:
+Bu eski prototip model tek bir JSON dosyasıydı. Pi tarafında ekstra ML kütüphanesi gerektirmezdi:
 
 ```json
 {
@@ -559,25 +703,28 @@ Bu sonuçlar sistemin çalıştığını göstermek için değerlidir; ancak bil
 
 | Özellik | Hafif canlı model | CNN/LSTM modeli |
 | --- | --- | --- |
-| Girdi | 32 adet `motionScore` | 64 frame x 128 tone CSI matrisi |
+| Girdi | 32 adet `motionScore` | 24 örnek x 128 tone CSI matrisi |
 | Öğrendiği şey | Hareket skorunun istatistiksel değişimi | Frekans ve zaman örüntüsü |
-| Çalışma yeri | Raspberry Pi WebUI backend | Bilgisayar veya optimize edilmiş Pi inference |
+| Çalışma yeri | Raspberry Pi WebUI backend | Raspberry Pi WebUI backend, PyTorch CPU |
 | Bağımlılık | Sadece Python standart kütüphane | PyTorch/TorchScript/ONNX gerekir |
 | Avantaj | Hızlı, stabil, düşük gecikme | Daha zengin ve güçlü sınıflandırma |
-| Dezavantaj | Ham CSI detayını kullanmaz | Canlıya almak daha fazla mühendislik ister |
+| Dezavantaj | Ham CSI detayını kullanmaz | Daha fazla CPU ve bağımlılık ister |
 
-Bu nedenle hafif model "canlı doğrulama ve erken prototip", CNN/LSTM ise "asıl öğrenebilir model" olarak düşünülmelidir.
+Bu tablo prototipten asıl modele geçiş motivasyonunu gösterir. Güncel sistemde canlı sınıflandırma CNN/LSTM tarafına geçirilmiştir; hafif model yalnızca tarihsel prototip olarak kalmıştır.
 
-## CNN/LSTM ile Canlı Modele Geçiş
+## CNN/LSTM Canlı Entegrasyonu
 
-CNN/LSTM eğitim hattı hazırdır; ancak canlıya doğrudan bağlamak için birkaç yol vardır:
+CNN/LSTM modeli artık canlı WebUI backend'e bağlanmıştır. Entegrasyon akışı şu şekildedir:
 
-1. Modeli Pi üzerinde PyTorch ile çalıştırmak.
-2. Modeli TorchScript veya ONNX formatına dönüştürmek.
-3. Canlı WebUI backend'i bu modeli yükleyip her pencereye tahmin yaptırmak.
-4. Daha güçlü bir bilgisayarda inference servisi çalıştırıp Alpha'dan canlı özellik göndermek.
+1. `best_csi_cnn_lstm_temporal.pt` dosyası Alpha'da `/home/admin/csi/models/` altına koyulur.
+2. `csi_web.py` açılışta PyTorch modelini yükler.
+3. CSI stream'den gelen amplitüdler 128 tone'a indirilir.
+4. Son 24 örnek ring buffer'da tutulur.
+5. Model her 12 frame'de bir tahmin üretir.
+6. WebUI `label`, `confidence`, sınıf olasılıkları ve alarm durumunu gösterir.
+7. `hand_motion` ve `passage` olayları alarm kapısından geçerse kayıt listesine yazılır.
 
-İlk prototipte hafif model kullandık. Daha sağlıklı veri toplandıktan sonra CNN/LSTM modelini canlıya geçirmek mantıklı olacaktır.
+Gelecekte performans gerekirse aynı model TorchScript veya ONNX'e dönüştürülerek CPU yükü azaltılabilir.
 
 ## Sağlıklı Veri Toplama Protokolü
 
@@ -651,6 +798,9 @@ Aynı kayıt dosyasından hem eğitim hem test pencereleri alınırsa doğruluk 
 - CNN/LSTM eğitim scriptleri hazırlandı.
 - `stable` ve `hand_motion` ile ilk model denemesi yapıldı.
 - Canlı WebUI'a hafif `hand_motion` detektörü bağlandı.
+- `empty`, `sit`, `stand`, `passage`, `hand_motion` sınıflarıyla çok sınıflı CNN/LSTM modeli eğitildi.
+- PyTorch CNN/LSTM modeli canlı WebUI backend'e bağlandı.
+- Realtime alarm listesi, alarm silme ve yanlış pozitifleri azaltan alarm kapısı eklendi.
 
 WebUI adresi:
 
@@ -663,6 +813,6 @@ http://192.168.1.99:8080
 1. Daha düzenli ve uzun dataset topla.
 2. Her sınıf için ayrı oturumlar oluştur.
 3. Eğitim/validasyon/test ayrımını oturum bazında yap.
-4. CNN/LSTM modelini tekrar eğit.
-5. Modeli canlı WebUI'a TorchScript/ONNX veya hafif model formatıyla bağla.
-6. WebUI'da model versiyonu, confidence, eşik ve son tahmin geçmişini göster.
+4. CNN/LSTM modelini daha dengeli veriyle tekrar eğit.
+5. Gerekirse modeli TorchScript/ONNX'e dönüştürerek Pi üzerindeki CPU yükünü azalt.
+6. WebUI'da alarm doğrulama, etiket düzeltme ve test oturumu karşılaştırma ekranları ekle.

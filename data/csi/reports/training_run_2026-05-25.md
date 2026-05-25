@@ -211,9 +211,9 @@ Bu model realtime deneme için uygundur, ancak nihai akademik/ürün modeli olar
 - `hand_motion` için curl hareketinin farklı hızları
 - Her sınıf için en az bir bağımsız test oturumu
 
-## Realtime WebUI Entegrasyon Planı
+## Realtime WebUI Entegrasyonu
 
-Canlı sistemde yapılacak adımlar:
+Canlı sistemde uygulanan adımlar:
 
 1. Backend canlı CSI amplitüdlerini 128 tone olacak şekilde ring buffer'a alır.
 2. Son 24 örnek aynı eğitimdeki gibi pencere haline getirilir.
@@ -221,7 +221,25 @@ Canlı sistemde yapılacak adımlar:
 4. Model `label + confidence` üretir.
 5. WebUI anlık etiketi gösterir.
 6. `passage` ve `hand_motion` sınıfları alarm olayı olarak kaydedilir.
-7. Alarm kayıtları WebUI'da listelenir, indirilebilir ve silinebilir olur.
+7. Alarm kayıtları WebUI'da realtime listelenir ve silinebilir.
+
+Canlı inference temposu eğitim verisine uyumlu tutulur:
+
+```text
+MODEL_INFER_STRIDE = 12
+```
+
+Bunun sebebi, eğitim NDJSON örneklerinin WebUI tarafından her 12 CSI frame'inde bir yazılmasıdır. Model canlıda her frame'de çalıştırılırsa pencere fiziksel olarak çok kısalır ve boş oda senaryosunda yanlış alarm riski artar.
+
+Alarm kaydı için modelin alarm sınıfı seçmesi tek başına yeterli değildir. Güncel alarm kapısı:
+
+```text
+confidence >= 0.80
+motionScore >= 0.05
+packetRate >= 5 pkt/s
+same-label streak >= 2
+cooldown = 5 s
+```
 
 Önerilen alarm kaydı alanları:
 
