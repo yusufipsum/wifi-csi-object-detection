@@ -86,6 +86,8 @@ passage
 hand_motion
 ```
 
+Bu beş sınıflı liste 2026-05-25 tarihli eski amplitüd-only dataset'e aittir. 2026-05-30 tarihli fazlı yeni modelde `sit` ve `stand` verisi toplanmamıştır; yeni fazlı model yalnızca `empty`, `hand_motion` ve `passage` sınıflarıyla eğitilmiştir.
+
 İlk dataset'te her `sample` satırında ana girdi:
 
 ```text
@@ -411,7 +413,7 @@ X_short(t) = [x_{t-15}, ..., x_t]
 X_long(t)  = [x_{t-47}, ..., x_t]
 ```
 
-Yani kısa ve uzun model dalları farklı olaylara değil, aynı anın farklı zaman bağlamlarına bakar. Kısa dal el hareketi gibi hızlı değişimleri yakalamaya, uzun dal ise `passage`, `sit/stand` drift'i ve boş oda stabilitesini ayırmaya çalışır.
+Yani kısa ve uzun model dalları farklı olaylara değil, aynı anın farklı zaman bağlamlarına bakar. Kısa dal el hareketi gibi hızlı değişimleri yakalamaya, uzun dal ise `passage`, boş oda stabilitesi ve yanlış alarm bastırma bağlamını ayırmaya çalışır.
 
 Her frame ortak CNN encoder'dan geçirilir:
 
@@ -444,7 +446,7 @@ Bu yapı pratikte şu soruyu sorar:
 
 ```text
 "Son birkaç saniyede hızlı bir el izi var mı?"
-"Aynı anda daha uzun bağlam boş oda/oturma/ayakta durma/passage ile uyumlu mu?"
+"Aynı anda daha uzun bağlam boş oda veya passage ile uyumlu mu?"
 ```
 
 Bu yüzden çok ölçekli model, sadece mikro hareketi büyütmek yerine, mikro hareketi makro bağlamla birlikte sınar. Bu boş oda false positive problemini azaltmak için daha savunulabilir bir yoldur.
@@ -806,6 +808,16 @@ python tools/csi_ml/train_multiscale_cnn_lstm.py data/csi/csi_multiscale_physica
 ```
 
 Bu modelin checkpoint'i canlı backend tarafından doğrudan okunabilir. Backend `windows=[16,48]` alanını gördüğünde buffer uzunluğunu 48 sample'a çıkarır, her karar anında son 16 ve son 48 sample'ı ayrı ayrı normalize eder ve modeli iki girdiyle çalıştırır.
+
+2026-05-30 tarihli seçilen fazlı model bu çok ölçekli hatla eğitilmiştir, ancak sınıf listesi üç sınıftır:
+
+```text
+empty
+hand_motion
+passage
+```
+
+Bu model `sit` veya `stand` tahmini üretmez; bu sınıflar için ayrıca fazlı kayıt toplanıp yeni bir genişletilmiş model eğitilmelidir.
 
 ## 21. Kısa Özet
 

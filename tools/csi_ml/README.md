@@ -103,7 +103,7 @@ python tools/csi_ml/train_multiscale_cnn_lstm.py data/csi/csi_multiscale_physica
 
 The short branch (`16` samples) targets hand-scale and quicker CSI changes. The
 long branch (`48` samples) gives the classifier enough context for passage,
-sit/stand drift, and false-alarm suppression. Both branches are aligned to the
+empty-room stability, and false-alarm suppression. Both branches are aligned to the
 same end time, so each prediction answers one current moment at two temporal
 scales.
 
@@ -120,4 +120,4 @@ python tools/csi_ml/prepare_multiscale_session_splits.py data/csi/raw_phase_2026
   --features amp,phase,amp_delta,phase_delta
 ```
 
-Collect each class in separate sessions. For the phase-aware model, start with `empty`, `sit`, `stand`, `hand_motion`, and `passage`, repeated in 2-3 rounds with at least 400 samples per class.
+Collect each class in separate sessions. The 2026-05-30 phase-aware live model was trained only with `empty`, `hand_motion`, and `passage`. Add `sit` and `stand` only after collecting separate phase-ready sessions for those labels.
