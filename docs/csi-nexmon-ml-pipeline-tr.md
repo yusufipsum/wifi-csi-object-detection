@@ -2,6 +2,12 @@
 
 Bu doküman, Raspberry Pi 5 üzerinde Nexmon CSI ile kanal durum bilgisi toplayan, WebUI üzerinden canlı görselleştiren ve etiketli verilerle el hareketi algılama modeli eğitmeye hazırlanan sistemin mimarisini açıklar.
 
+Algoritmanın matematiksel açıklaması ve ML dataset'inin formel yorumu için ayrıca bakınız:
+
+```text
+docs/csi-algoritma-matematik-tr.md
+```
+
 ## Amaç
 
 Sistemin hedefi iki Raspberry Pi cihazı arasında kontrollü bir Wi-Fi bağlantısı kurup, alıcı tarafta CSI verisini toplamaktır. CSI, kablosuz kanalın zaman içinde nasıl değiştiğini gösterir. İnsan eli, gövdesi veya ortam hareketi sinyalin genlik ve faz örüntüsünü değiştirir. Bu değişimler zaman serisi olarak işlenip `stable`, `hand_motion` gibi sınıflara ayrılabilir.
