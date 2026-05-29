@@ -20,15 +20,85 @@ def read_session(path):
                 amps = row.get("amps")
                 label = row.get("label") or meta.get("label")
                 if amps and label:
-                    samples.append({
+                    sample = {
                         "amps": np.asarray(amps, dtype=np.float32),
                         "label": str(label),
                         "ts": row.get("receivedAt") or row.get("ts"),
                         "packetRate": row.get("packetRate"),
                         "motionScore": row.get("motionScore"),
                         "rssi": row.get("rssi"),
-                    })
+                    }
+                    if row.get("phaseResiduals"):
+                        sample["phaseResiduals"] = np.asarray(row["phaseResiduals"], dtype=np.float32)
+                    samples.append(sample)
     return meta, samples
+
+
+def moving_average(values, radius):
+    if radius <= 0 or len(values) <= 1:
+        return values.copy()
+    cumsum = np.concatenate(
+        [np.zeros((1,) + values.shape[1:], dtype=np.float32), np.cumsum(values, axis=0)],
+        axis=0,
+    )
+    result = np.empty_like(values, dtype=np.float32)
+    for idx in range(len(values)):
+        start = max(0, idx - radius)
+        end = min(len(values), idx + radius + 1)
+        result[idx] = (cumsum[end] - cumsum[start]) / float(end - start)
+    return result
+
+
+def delta(values):
+    result = np.zeros_like(values, dtype=np.float32)
+    if len(values) > 1:
+        result[1:] = values[1:] - values[:-1]
+    return result
+
+
+def stack_required(samples, key, path, feature_name):
+    rows = []
+    for idx, sample in enumerate(samples):
+        value = sample.get(key)
+        if value is None:
+            raise SystemExit(
+                f"Feature '{feature_name}' requires '{key}', but {path} sample {idx} does not contain it."
+            )
+        rows.append(value)
+    return np.stack(rows, axis=0).astype(np.float32)
+
+
+def build_feature_matrix(samples, feature_names, residual_radius, path):
+    amps = stack_required(samples, "amps", path, "amp")
+    cache = {"amp": amps}
+    channels = []
+    for name in feature_names:
+        if name == "amp":
+            value = cache["amp"]
+        elif name == "amp_delta":
+            value = cache.setdefault("amp_delta", delta(cache["amp"]))
+        elif name == "amp_residual":
+            baseline = moving_average(cache["amp"], residual_radius)
+            value = cache.setdefault("amp_residual", cache["amp"] - baseline)
+        elif name == "phase":
+            value = cache.setdefault(
+                "phase",
+                stack_required(samples, "phaseResiduals", path, "phase"),
+            )
+        elif name == "phase_delta":
+            phase = cache.setdefault(
+                "phase",
+                stack_required(samples, "phaseResiduals", path, "phase_delta"),
+            )
+            value = cache.setdefault("phase_delta", delta(phase))
+        else:
+            raise SystemExit(
+                f"Unknown feature '{name}'. Use amp, amp_delta, amp_residual, phase, phase_delta."
+            )
+        channels.append(value)
+    if len(channels) == 1:
+        return channels[0]
+    return np.stack(channels, axis=1).astype(np.float32)
 
 
 def normalize_window(window):
@@ -71,7 +141,21 @@ def main():
     parser.add_argument("--train-ratio", type=float, default=0.60)
     parser.add_argument("--val-ratio", type=float, default=0.20)
     parser.add_argument("--purge", type=int, default=16, help="Sample gap between temporal splits.")
+    parser.add_argument(
+        "--features",
+        default="amp",
+        help="Comma-separated feature channels: amp, amp_delta, amp_residual, phase, phase_delta.",
+    )
+    parser.add_argument(
+        "--residual-radius",
+        type=int,
+        default=15,
+        help="Radius for amp_residual moving average in dataset samples.",
+    )
     args = parser.parse_args()
+    feature_names = [item.strip() for item in args.features.split(",") if item.strip()]
+    if not feature_names:
+        raise SystemExit("At least one feature must be selected.")
 
     paths = []
     for value in args.inputs:
@@ -94,6 +178,8 @@ def main():
         "valRatio": args.val_ratio,
         "testRatio": 1.0 - args.train_ratio - args.val_ratio,
         "purge": args.purge,
+        "featureNames": feature_names,
+        "residualRadius": args.residual_radius,
         "sessions": [],
     }
 
@@ -107,7 +193,7 @@ def main():
             labels.append(session_label)
         label_id = label_to_id[session_label]
 
-        features = np.stack([sample["amps"] for sample in samples], axis=0)
+        features = build_feature_matrix(samples, feature_names, args.residual_radius, path)
         n = len(samples)
         train_end = int(n * args.train_ratio)
         val_start = min(n, train_end + args.purge)
@@ -135,7 +221,10 @@ def main():
             "label": session_label,
             "samples": n,
             "durationSeconds": duration_s,
-            "tones": int(features.shape[1]),
+            "tones": int(features.shape[-1]),
+            "channels": len(feature_names),
+            "featureNames": feature_names,
+            "featureShape": list(features.shape[1:]),
             "splitBounds": bounds,
             "windows": split_counts,
             "packetRate": summarize_values(sample.get("packetRate") for sample in samples),
@@ -149,6 +238,8 @@ def main():
 
     payload = {
         "labels": np.asarray(labels),
+        "featureNames": np.asarray(feature_names),
+        "channels": np.asarray([len(feature_names)], dtype=np.int64),
         "report": json.dumps(report, ensure_ascii=False, indent=2),
     }
     for split_name, values in splits.items():

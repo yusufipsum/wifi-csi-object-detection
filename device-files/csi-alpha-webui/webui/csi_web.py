@@ -40,17 +40,20 @@ DEFAULT_CHANNEL = "48/80"
 DEFAULT_SOURCE_MAC = "88:a2:9e:5d:4e:a6"
 DEFAULT_DISTANCE_M = 2.0
 PUBLISH_INTERVAL_S = 0.10
-DATASET_FRAME_STRIDE = 12
+DATASET_FRAME_STRIDE = 6
 MODEL_INFER_STRIDE = DATASET_FRAME_STRIDE
 VISUAL_TONES = 96
 DATASET_TONES = 128
 MAX_LOG_LINES = 80
 ALARM_LABELS = {"passage", "hand_motion"}
 ALARM_COOLDOWN_S = 5.0
-ALARM_CONFIDENCE_THRESHOLD = 0.80
+ALARM_CONFIDENCE_THRESHOLD = 0.85
 ALARM_MIN_MOTION_SCORE = 0.05
 ALARM_MIN_PACKET_RATE = 5.0
 ALARM_STREAK_REQUIRED = 2
+CAPTURE_PROFILE = "multiscale_physical_v1"
+RECOMMENDED_TRAINING_WINDOW = 16
+RECOMMENDED_TRAINING_WINDOWS = [16, 48]
 
 
 def alarm_policy():
@@ -61,6 +64,8 @@ def alarm_policy():
         "streak": ALARM_STREAK_REQUIRED,
         "cooldownS": ALARM_COOLDOWN_S,
         "inferStride": MODEL_INFER_STRIDE,
+        "profile": CAPTURE_PROFILE,
+        "trainingWindows": RECOMMENDED_TRAINING_WINDOWS,
     }
 
 
@@ -103,6 +108,48 @@ def round_series(values, digits=2):
 
 def log_amp_series(values):
     return [math.log10(max(1.0, float(v))) for v in values]
+
+
+def unwrap_phase_series(values):
+    if not values:
+        return []
+    unwrapped = [float(values[0])]
+    offset = 0.0
+    previous = float(values[0])
+    two_pi = 2.0 * math.pi
+    for value in values[1:]:
+        current = float(value) + offset
+        delta = current - previous
+        if delta > math.pi:
+            offset -= two_pi
+            current -= two_pi
+        elif delta < -math.pi:
+            offset += two_pi
+            current += two_pi
+        unwrapped.append(current)
+        previous = current
+    return unwrapped
+
+
+def phase_residual_series(values):
+    unwrapped = unwrap_phase_series(values)
+    n = len(unwrapped)
+    if n <= 1:
+        return unwrapped
+    sum_x = n * (n - 1) / 2.0
+    sum_x2 = (n - 1) * n * (2 * n - 1) / 6.0
+    sum_y = sum(unwrapped)
+    sum_xy = sum(idx * value for idx, value in enumerate(unwrapped))
+    denom = n * sum_x2 - sum_x * sum_x
+    if abs(denom) < 1e-12:
+        slope = 0.0
+    else:
+        slope = (n * sum_xy - sum_x * sum_y) / denom
+    intercept = (sum_y - slope * sum_x) / n
+    return [
+        value - (slope * idx + intercept)
+        for idx, value in enumerate(unwrapped)
+    ]
 
 
 def record_dirs():
@@ -160,10 +207,19 @@ def list_record_files():
 
 
 class CsiCnnLstmLive(nn.Module if nn else object):
-    def __init__(self, tones, classes, conv_channels=32, hidden=64, dropout=0.35, bidirectional=True):
+    def __init__(
+        self,
+        tones,
+        classes,
+        input_channels=1,
+        conv_channels=32,
+        hidden=64,
+        dropout=0.35,
+        bidirectional=True,
+    ):
         super().__init__()
         self.encoder = nn.Sequential(
-            nn.Conv1d(1, conv_channels, kernel_size=7, padding=3),
+            nn.Conv1d(input_channels, conv_channels, kernel_size=7, padding=3),
             nn.BatchNorm1d(conv_channels),
             nn.GELU(),
             nn.MaxPool1d(2),
@@ -189,12 +245,89 @@ class CsiCnnLstmLive(nn.Module if nn else object):
         )
 
     def forward(self, x):
-        batch, steps, tones = x.shape
-        x = x.reshape(batch * steps, 1, tones)
+        if x.dim() == 3:
+            batch, steps, tones = x.shape
+            x = x.reshape(batch * steps, 1, tones)
+        else:
+            batch, steps, channels, tones = x.shape
+            x = x.reshape(batch * steps, channels, tones)
         x = self.encoder(x)
         x = x.reshape(batch, steps, -1)
         out, _ = self.lstm(x)
         return self.classifier(out[:, -1, :])
+
+
+class FrameEncoderLive(nn.Module if nn else object):
+    def __init__(self, input_channels=1, conv_channels=32, dropout=0.35):
+        super().__init__()
+        self.output_dim = conv_channels * 2 * 16
+        self.net = nn.Sequential(
+            nn.Conv1d(input_channels, conv_channels, kernel_size=7, padding=3),
+            nn.BatchNorm1d(conv_channels),
+            nn.GELU(),
+            nn.MaxPool1d(2),
+            nn.Dropout(dropout * 0.35),
+            nn.Conv1d(conv_channels, conv_channels * 2, kernel_size=5, padding=2),
+            nn.BatchNorm1d(conv_channels * 2),
+            nn.GELU(),
+            nn.AdaptiveAvgPool1d(16),
+            nn.Flatten(),
+        )
+
+    def forward(self, x):
+        return self.net(x)
+
+
+class CsiMultiScaleCnnLstmLive(nn.Module if nn else object):
+    def __init__(
+        self,
+        windows,
+        classes,
+        input_channels=1,
+        conv_channels=32,
+        hidden=64,
+        dropout=0.35,
+        bidirectional=True,
+    ):
+        super().__init__()
+        self.windows = [int(window) for window in windows]
+        self.encoder = FrameEncoderLive(input_channels, conv_channels, dropout)
+        self.lstms = nn.ModuleDict({
+            str(window): nn.LSTM(
+                self.encoder.output_dim,
+                hidden,
+                batch_first=True,
+                bidirectional=bidirectional,
+                dropout=0.0,
+            )
+            for window in self.windows
+        })
+        branch_dim = hidden * (2 if bidirectional else 1)
+        self.classifier = nn.Sequential(
+            nn.LayerNorm(branch_dim * len(self.windows)),
+            nn.Dropout(dropout),
+            nn.Linear(branch_dim * len(self.windows), classes),
+        )
+
+    def _encode_sequence(self, x):
+        if x.dim() == 3:
+            batch, steps, tones = x.shape
+            x = x.reshape(batch * steps, 1, tones)
+        elif x.dim() == 4:
+            batch, steps, channels, tones = x.shape
+            x = x.reshape(batch * steps, channels, tones)
+        else:
+            raise ValueError(f"expected 3D or 4D input, got shape {tuple(x.shape)}")
+        encoded = self.encoder(x)
+        return encoded.reshape(batch, steps, -1)
+
+    def forward(self, inputs):
+        branches = []
+        for window, x in zip(self.windows, inputs):
+            encoded = self._encode_sequence(x)
+            out, _ = self.lstms[str(window)](encoded)
+            branches.append(out[:, -1, :])
+        return self.classifier(torch.cat(branches, dim=1))
 
 
 class DeepCsiModel:
@@ -205,8 +338,14 @@ class DeepCsiModel:
         self.model = None
         self.labels = []
         self.window = 24
+        self.windows = [self.window]
+        self.is_multiscale = False
         self.tones = DATASET_TONES
+        self.input_channels = 1
+        self.feature_names = ["amp"]
         self.buffer = collections.deque(maxlen=self.window)
+        self.previous_amp = None
+        self.previous_phase = None
         self._load()
 
     def _load(self):
@@ -220,14 +359,37 @@ class DeepCsiModel:
             checkpoint = torch.load(str(self.path), map_location="cpu", weights_only=False)
             self.model_name = str(checkpoint.get("model") or self.model_name)
             self.labels = [str(label) for label in checkpoint.get("labels", [])]
-            self.window = int(checkpoint.get("window", 24))
+            raw_windows = checkpoint.get("windows")
+            if raw_windows is not None:
+                self.windows = sorted({int(window) for window in raw_windows})
+            else:
+                self.windows = [int(checkpoint.get("window", 24))]
+            self.window = max(self.windows)
             self.tones = int(checkpoint.get("tones", DATASET_TONES))
+            self.input_channels = int(checkpoint.get("inputChannels") or checkpoint.get("channels") or 1)
+            self.feature_names = [
+                str(value)
+                for value in checkpoint.get("featureNames", ["amp"])
+            ]
             bidirectional = bool(checkpoint.get("bidirectional", True))
-            self.model = CsiCnnLstmLive(
-                tones=self.tones,
-                classes=len(self.labels),
-                bidirectional=bidirectional,
+            self.is_multiscale = (
+                self.model_name.startswith("csi_cnn_lstm_multiscale")
+                or len(self.windows) > 1
             )
+            if self.is_multiscale:
+                self.model = CsiMultiScaleCnnLstmLive(
+                    windows=self.windows,
+                    classes=len(self.labels),
+                    input_channels=self.input_channels,
+                    bidirectional=bidirectional,
+                )
+            else:
+                self.model = CsiCnnLstmLive(
+                    tones=self.tones,
+                    classes=len(self.labels),
+                    input_channels=self.input_channels,
+                    bidirectional=bidirectional,
+                )
             self.model.load_state_dict(checkpoint["model_state"])
             self.model.eval()
             self.buffer = collections.deque(maxlen=self.window)
@@ -237,6 +399,8 @@ class DeepCsiModel:
 
     def clear(self):
         self.buffer.clear()
+        self.previous_amp = None
+        self.previous_phase = None
 
     def status(self):
         if self.model is None:
@@ -248,7 +412,10 @@ class DeepCsiModel:
                 "error": self.error,
                 "windowReady": len(self.buffer),
                 "window": self.window,
+                "windows": self.windows,
                 "tones": self.tones,
+                "inputChannels": self.input_channels,
+                "featureNames": self.feature_names,
             }
         return {
             "model": self.model_name,
@@ -257,23 +424,71 @@ class DeepCsiModel:
             "confidence": 0.0,
             "windowReady": len(self.buffer),
             "window": self.window,
+            "windows": self.windows,
             "tones": self.tones,
+            "inputChannels": self.input_channels,
+            "featureNames": self.feature_names,
             "labels": self.labels,
             "alarmLabels": sorted(ALARM_LABELS),
             "alarmPolicy": alarm_policy(),
         }
 
-    def infer(self, amps):
+    def _feature_frame(self, sample_or_amps):
+        if isinstance(sample_or_amps, dict):
+            sample = sample_or_amps
+            amps = sample.get("amps", [])
+            phases = sample.get("phases", [])
+        else:
+            amps = sample_or_amps
+            phases = []
+        amp = log_amp_series(downsample(amps, self.tones))
+        if len(amp) != self.tones:
+            return None, f"expected {self.tones} tones, got {len(amp)}"
+        phase = []
+        if phases:
+            phase = downsample(phase_residual_series(phases), self.tones)
+        channels = []
+        for name in self.feature_names or ["amp"]:
+            if name == "amp":
+                channels.append(amp)
+            elif name == "phase":
+                if len(phase) != self.tones:
+                    return None, "phase feature requested but phases are missing"
+                channels.append(phase)
+            elif name == "amp_delta":
+                if self.previous_amp is None:
+                    channels.append([0.0] * self.tones)
+                else:
+                    channels.append([a - b for a, b in zip(amp, self.previous_amp)])
+            elif name == "phase_delta":
+                if len(phase) != self.tones:
+                    return None, "phase_delta feature requested but phases are missing"
+                if self.previous_phase is None:
+                    channels.append([0.0] * self.tones)
+                else:
+                    channels.append([a - b for a, b in zip(phase, self.previous_phase)])
+            else:
+                return None, f"unsupported live feature: {name}"
+        if len(channels) != self.input_channels:
+            return None, f"checkpoint expects {self.input_channels} channels, built {len(channels)}"
+        self.previous_amp = amp
+        if len(phase) == self.tones:
+            self.previous_phase = phase
+        if len(channels) == 1:
+            return channels[0], None
+        return channels, None
+
+    def infer(self, sample_or_amps):
         if self.model is None:
             return self.status()
-        series = log_amp_series(downsample(amps, self.tones))
-        if len(series) != self.tones:
+        frame, error = self._feature_frame(sample_or_amps)
+        if error:
             return {
                 **self.status(),
                 "label": "boyut_hatasi",
-                "error": f"expected {self.tones} tones, got {len(series)}",
+                "error": error,
             }
-        self.buffer.append(series)
+        self.buffer.append(frame)
         if len(self.buffer) < self.window:
             return {
                 "model": self.model_name,
@@ -282,17 +497,31 @@ class DeepCsiModel:
                 "confidence": 0.0,
                 "windowReady": len(self.buffer),
                 "window": self.window,
+                "windows": self.windows,
                 "tones": self.tones,
+                "inputChannels": self.input_channels,
+                "featureNames": self.feature_names,
                 "labels": self.labels,
                 "alarmLabels": sorted(ALARM_LABELS),
                 "alarmPolicy": alarm_policy(),
             }
-        matrix = torch.tensor(list(self.buffer), dtype=torch.float32)
-        matrix = (matrix - matrix.mean(dim=0, keepdim=True)) / (
-            matrix.std(dim=0, keepdim=True, unbiased=False) + 1e-6
-        )
+        frames = list(self.buffer)
         with torch.no_grad():
-            logits = self.model(matrix.unsqueeze(0))
+            if self.is_multiscale:
+                inputs = []
+                for window in self.windows:
+                    matrix = torch.tensor(frames[-window:], dtype=torch.float32)
+                    matrix = (matrix - matrix.mean(dim=0, keepdim=True)) / (
+                        matrix.std(dim=0, keepdim=True, unbiased=False) + 1e-6
+                    )
+                    inputs.append(matrix.unsqueeze(0))
+                logits = self.model(inputs)
+            else:
+                matrix = torch.tensor(frames, dtype=torch.float32)
+                matrix = (matrix - matrix.mean(dim=0, keepdim=True)) / (
+                    matrix.std(dim=0, keepdim=True, unbiased=False) + 1e-6
+                )
+                logits = self.model(matrix.unsqueeze(0))
             probs = torch.softmax(logits, dim=1).squeeze(0).cpu().tolist()
         best_idx = max(range(len(probs)), key=lambda idx: probs[idx])
         label = self.labels[best_idx]
@@ -308,7 +537,10 @@ class DeepCsiModel:
             },
             "windowReady": len(self.buffer),
             "window": self.window,
+            "windows": self.windows,
             "tones": self.tones,
+            "inputChannels": self.input_channels,
+            "featureNames": self.feature_names,
             "labels": self.labels,
             "alarmLabels": sorted(ALARM_LABELS),
             "alarmPolicy": alarm_policy(),
@@ -818,7 +1050,14 @@ class CaptureManager:
             "note": self.params.get("note"),
             "pcap": str(self.capture_path) if self.capture_path else None,
             "tones": DATASET_TONES,
-            "feature": "log10_amplitude",
+            "schemaVersion": 2,
+            "profile": CAPTURE_PROFILE,
+            "datasetFrameStride": DATASET_FRAME_STRIDE,
+            "recommendedTrainingWindow": RECOMMENDED_TRAINING_WINDOW,
+            "recommendedTrainingWindows": RECOMMENDED_TRAINING_WINDOWS,
+            "feature": "log10_amplitude+linear_detrended_phase",
+            "features": ["amps", "phaseResiduals"],
+            "phaseCalibration": "unwrap_per_frame_then_remove_linear_trend_over_tones",
         }
         self.dataset_file.write(json.dumps(header, separators=(",", ":")) + "\n")
 
@@ -836,6 +1075,11 @@ class CaptureManager:
         self.dataset_frame_counter += 1
         if self.dataset_frame_counter % DATASET_FRAME_STRIDE != 0:
             return
+        amps = round_series(log_amp_series(downsample(sample["amps"], DATASET_TONES)), 5)
+        phase_residuals = round_series(
+            downsample(phase_residual_series(sample.get("phases") or []), DATASET_TONES),
+            5,
+        )
         record = {
             "type": "sample",
             "ts": sample["ts"],
@@ -847,7 +1091,8 @@ class CaptureManager:
             "seq": sample["seq"],
             "packetRate": round(packet_rate, 2),
             "motionScore": round(motion, 5),
-            "amps": round_series(log_amp_series(downsample(sample["amps"], DATASET_TONES)), 5),
+            "amps": amps,
+            "phaseResiduals": phase_residuals,
         }
         self.dataset_file.write(json.dumps(record, separators=(",", ":")) + "\n")
         with self.lock:
@@ -920,7 +1165,7 @@ class CaptureManager:
                 or not self.last_model_result
             )
             if should_infer:
-                result = self.deep_model.infer(sample["amps"])
+                result = self.deep_model.infer(sample)
                 result["skipped"] = False
                 result["inferenceStride"] = MODEL_INFER_STRIDE
                 result["alarmPolicy"] = alarm_policy()

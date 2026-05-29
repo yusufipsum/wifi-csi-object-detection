@@ -8,6 +8,12 @@ Algoritmanın matematiksel açıklaması ve ML dataset'inin formel yorumu için 
 docs/csi-algoritma-matematik-tr.md
 ```
 
+Fazlı yeni model için veri toplama protokolü:
+
+```text
+docs/csi-fazli-veri-toplama-protokolu-tr.md
+```
+
 ## Amaç
 
 Sistemin hedefi iki Raspberry Pi cihazı arasında kontrollü bir Wi-Fi bağlantısı kurup, alıcı tarafta CSI verisini toplamaktır. CSI, kablosuz kanalın zaman içinde nasıl değiştiğini gösterir. İnsan eli, gövdesi veya ortam hareketi sinyalin genlik ve faz örüntüsünü değiştirir. Bu değişimler zaman serisi olarak işlenip `stable`, `hand_motion` gibi sınıflara ayrılabilir.
@@ -72,6 +78,9 @@ tools/csi_ml/prepare_dataset.py
 tools/csi_ml/train_cnn_lstm.py
 tools/csi_ml/prepare_temporal_splits.py
 tools/csi_ml/train_temporal_cnn_lstm.py
+tools/csi_ml/prepare_multiscale_splits.py
+tools/csi_ml/train_multiscale_cnn_lstm.py
+tools/csi_ml/audit_dataset.py
 tools/csi_ml/requirements.txt
 tools/csi_ml/README.md
 ```
@@ -89,16 +98,16 @@ tools/csi_ml/README.md
 İlk satır oturum bilgisidir:
 
 ```json
-{"type":"session","label":"hand_motion","distanceM":2.0,"tones":128,"feature":"log10_amplitude"}
+{"type":"session","label":"hand_motion","distanceM":2.0,"tones":128,"feature":"log10_amplitude+linear_detrended_phase"}
 ```
 
 Sonraki satırlar örnektir:
 
 ```json
-{"type":"sample","label":"hand_motion","motionScore":0.12,"rssi":-51,"amps":[...]}
+{"type":"sample","label":"hand_motion","motionScore":0.12,"rssi":-51,"amps":[...],"phaseResiduals":[...]}
 ```
 
-Buradaki `amps`, CSI amplitüd değerlerinin log ölçeğine alınmış ve 128 tona indirgenmiş halidir.
+Buradaki `amps`, CSI amplitüd değerlerinin log ölçeğine alınmış ve 128 tona indirgenmiş halidir. Yeni kayıtlarda `phaseResiduals` alanı da vardır; bu alan ham fazın unwrap edilip subcarrier eksenindeki lineer trendinin çıkarılmış halidir.
 
 ## CSI'dan Özellik Çıkarma
 
@@ -113,6 +122,21 @@ Her subcarrier için amplitüd hesaplanır:
 ```text
 amplitude[k] = sqrt(real[k]^2 + imag[k]^2)
 ```
+
+Yeni fiziksel özellik hattında faz da çıkarılır:
+
+```text
+phase[k] = atan2(imag[k], real[k])
+```
+
+Ham faz doğrudan kullanılmaz. Her CSI frame'inde faz önce subcarrier ekseninde unwrap edilir, sonra lineer trend çıkarılır:
+
+```text
+phase_unwrapped[k] = unwrap(phase[k])
+phaseResidual[k] = phase_unwrapped[k] - (a * k + b)
+```
+
+Bu işlem, cihaz/sürücü kaynaklı lineer faz kaymasını azaltıp hareketin bıraktığı göreli faz desenini korumayı hedefler.
 
 Canlı UI tarafında amplitüdler görselleştirilir. ML dataset tarafında ise amplitüdler log ölçeğine alınır:
 
@@ -208,8 +232,9 @@ S: Alt taşıyıcı (Subcarrier) sayısı
 2. `Başlat` ile kayıt alınır.
 3. WebUI pcap ve ndjson üretir.
 4. NDJSON dosyaları bilgisayara indirilir.
-5. `prepare_temporal_splits.py` zaman sırasını koruyarak train/validation/test pencereleri üretir.
-6. `train_temporal_cnn_lstm.py` CNN/LSTM modelini eğitir.
+5. `audit_dataset.py` kayıtların sample, faz ve etiket durumunu denetler.
+6. `prepare_temporal_splits.py` veya `prepare_multiscale_splits.py` zaman sırasını koruyarak train/validation/test pencereleri üretir.
+7. `train_temporal_cnn_lstm.py` veya `train_multiscale_cnn_lstm.py` CNN/LSTM modelini eğitir.
 
 Komutlar:
 
@@ -223,18 +248,78 @@ source .venv-csi/bin/activate
 pip install -r tools/csi_ml/requirements.txt
 
 python tools/csi_ml/prepare_temporal_splits.py data/csi/raw \
-  -o data/csi/csi_temporal_w24_s4.npz \
-  --window 24 \
+  -o data/csi/csi_temporal_w16_s4.npz \
+  --window 16 \
   --stride 4 \
   --train-ratio 0.60 \
   --val-ratio 0.20 \
   --purge 16
 
-python tools/csi_ml/train_temporal_cnn_lstm.py data/csi/csi_temporal_w24_s4.npz \
+python tools/csi_ml/train_temporal_cnn_lstm.py data/csi/csi_temporal_w16_s4.npz \
   -o data/csi/models/best_csi_cnn_lstm_temporal.pt \
   --epochs 80 \
   --patience 14
 ```
+
+Fazlı yeni kayıtlar alındıktan sonra daha fiziksel tek ölçekli çok kanallı model için önerilen hazırlama komutu:
+
+```bash
+python tools/csi_ml/prepare_temporal_splits.py data/csi/raw \
+  -o data/csi/csi_temporal_physical_w16_s4.npz \
+  --window 16 \
+  --stride 4 \
+  --train-ratio 0.60 \
+  --val-ratio 0.20 \
+  --purge 16 \
+  --features amp,phase,amp_delta,phase_delta
+
+python tools/csi_ml/train_temporal_cnn_lstm.py data/csi/csi_temporal_physical_w16_s4.npz \
+  -o data/csi/models/csi_cnn_lstm_physical_w16_s4.pt \
+  --epochs 80 \
+  --patience 14
+```
+
+Bu durumda model girdisi tek kanal yerine şu şekle gelir:
+
+```text
+16 zaman adımı x 4 kanal x 128 tone
+```
+
+Kanallar:
+
+```text
+amp
+phase
+amp_delta
+phase_delta
+```
+
+Tez için tercih edilen çok ölçekli hazırlama/eğitim komutu:
+
+```bash
+python tools/csi_ml/prepare_multiscale_splits.py data/csi/raw_phase \
+  -o data/csi/csi_multiscale_physical_w16_w48_s4.npz \
+  --windows 16,48 \
+  --stride 4 \
+  --train-ratio 0.60 \
+  --val-ratio 0.20 \
+  --purge 32 \
+  --features amp,phase,amp_delta,phase_delta
+
+python tools/csi_ml/train_multiscale_cnn_lstm.py data/csi/csi_multiscale_physical_w16_w48_s4.npz \
+  -o data/csi/models/csi_cnn_lstm_multiscale_w16_w48.pt \
+  --epochs 80 \
+  --patience 14
+```
+
+Bu model iki girdi üretir:
+
+```text
+X_short: 16 zaman adımı x 4 kanal x 128 tone
+X_long:  48 zaman adımı x 4 kanal x 128 tone
+```
+
+İki pencere aynı bitiş anına hizalanır. Kısa dal el hareketi gibi hızlı değişimleri, uzun dal ise passage/stabilite bağlamını taşır.
 
 ## Canlı WebUI'da Şu An Hangi Model Çalışıyor?
 
@@ -283,10 +368,10 @@ Backend her CSI paketinden amplitüd dizisini alır ve eğitimdeki gibi 128 tone
 series = log_amp_series(downsample(amps, 128))
 ```
 
-Ardından son 24 örneklik pencere tutulur:
+Ardından model checkpoint'inin beklediği uzunlukta pencere tutulur. Mevcut amplitüd-only modelde bu değer 24'tür. `multiscale_physical_v1` profilinde checkpoint `windows=[16,48]` içerirse backend buffer'ı 48 sample'a çıkarır:
 
 ```python
-self.buffer = collections.deque(maxlen=24)
+self.buffer = collections.deque(maxlen=model_window)
 self.buffer.append(series)
 ```
 
@@ -302,16 +387,23 @@ matrix = (matrix - matrix.mean(dim=0, keepdim=True)) / (
 Bu normalize matrisin boyutu:
 
 ```text
-24 zaman adımı x 128 tone
+model_window zaman adımı x feature_channels x 128 tone
 ```
 
-Sonra model çalıştırılır:
+Tek ölçekli modelde model doğrudan tek pencereyle çalıştırılır:
 
 ```python
 logits = model(matrix.unsqueeze(0))
 probs = torch.softmax(logits, dim=1)
 label = labels[argmax(probs)]
 confidence = max(probs)
+```
+
+Çok ölçekli modelde backend son 16 ve son 48 sample'ı ayrı ayrı normalize edip modele iki girdi verir:
+
+```python
+inputs = [x_last_16.unsqueeze(0), x_last_48.unsqueeze(0)]
+logits = model(inputs)
 ```
 
 Modelin çıktısı WebUI'a şu alanlarla gider:
@@ -328,27 +420,31 @@ Modelin çıktısı WebUI'a şu alanlarla gider:
     "sit": 0.00,
     "stand": 0.02
   },
-  "window": 24,
+  "window": 16,
+  "windows": [16, 48],
+  "inputChannels": 4,
+  "featureNames": ["amp", "phase", "amp_delta", "phase_delta"],
   "tones": 128
 }
 ```
 
 ### Realtime Inference Temposu
 
-Eğitim verisi WebUI tarafından her 12 CSI frame'inde bir örnek yazılarak oluşturuldu. Bu yüzden canlı backend de modeli her frame'de değil, aynı tempoya yakın olacak şekilde 12 frame'de bir çalıştırır:
+`multiscale_physical_v1` profilinde eğitim verisi WebUI tarafından her 6 CSI frame'inde bir örnek yazılır. Bu yüzden canlı backend de modeli her frame'de değil, aynı tempoya yakın olacak şekilde 6 frame'de bir çalıştırır:
 
 ```python
-MODEL_INFER_STRIDE = 12
+DATASET_FRAME_STRIDE = 6
+MODEL_INFER_STRIDE = 6
 ```
 
-Bu kritik bir ayrıntıdır. Model her frame'de çalıştırılırsa 24 örneklik pencere eğitimdekinden çok daha kısa bir fiziksel zamana karşılık gelir ve boş odada yanlış alarm ihtimali artar.
+Bu kritik bir ayrıntıdır. Model her frame'de çalıştırılırsa 16 ve 48 örneklik pencereler eğitimdekinden çok daha kısa bir fiziksel zamana karşılık gelir ve boş odada yanlış alarm ihtimali artar.
 
 ### Alarm Kapısı
 
 Modelin bir sınıfı `hand_motion` veya `passage` seçmesi tek başına alarm kaydı üretmez. Yanlış pozitifleri azaltmak için ek kapı uygulanır:
 
 ```text
-confidence >= 0.80
+confidence >= 0.85
 motionScore >= 0.05
 packetRate >= 5 pkt/s
 aynı alarm etiketi art arda en az 2 kez
@@ -725,8 +821,8 @@ CNN/LSTM modeli artık canlı WebUI backend'e bağlanmıştır. Entegrasyon akı
 1. `best_csi_cnn_lstm_temporal.pt` dosyası Alpha'da `/home/admin/csi/models/` altına koyulur.
 2. `csi_web.py` açılışta PyTorch modelini yükler.
 3. CSI stream'den gelen amplitüdler 128 tone'a indirilir.
-4. Son 24 örnek ring buffer'da tutulur.
-5. Model her 12 frame'de bir tahmin üretir.
+4. Model checkpoint'inin pencere uzunluğu kadar örnek ring buffer'da tutulur.
+5. `multiscale_physical_v1` profilinde model her 6 frame'de bir tahmin üretir.
 6. WebUI `label`, `confidence`, sınıf olasılıkları ve alarm durumunu gösterir.
 7. `hand_motion` ve `passage` olayları alarm kapısından geçerse kayıt listesine yazılır.
 

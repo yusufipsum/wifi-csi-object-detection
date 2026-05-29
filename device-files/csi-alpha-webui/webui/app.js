@@ -119,6 +119,23 @@ function formatDateTime(ms) {
   });
 }
 
+function formatWindows(info) {
+  const windows = Array.isArray(info?.windows) && info.windows.length
+    ? info.windows
+    : info?.window
+      ? [info.window]
+      : [];
+  return windows.length ? windows.join("+") : "--";
+}
+
+function formatModelShape(info) {
+  const features = Array.isArray(info?.featureNames) ? info.featureNames : [];
+  const channelCount = info?.inputChannels || features.length || "--";
+  const featureText = features.length ? ` · ${features.join(",")}` : "";
+  const profile = info?.alarmPolicy?.profile ? ` · ${info.alarmPolicy.profile}` : "";
+  return `${formatWindows(info)} sample · ${channelCount} kanal · ${info?.tones || "--"} tone${featureText}${profile}`;
+}
+
 function statsFor(values) {
   const nums = (values || []).map(Number).filter((value) => Number.isFinite(value));
   if (!nums.length) {
@@ -202,7 +219,7 @@ function updateChartMeta(sample) {
 
   const ml = sample?.ml || {};
   const windowReady = ml.windowReady ?? state.motion.length;
-  const windowSize = ml.window || "--";
+  const windowSize = formatWindows(ml);
   els.motionMeta.textContent =
     `Son ${state.motion.length} hareket ölçümü · anlık skor ${fmt(state.smoothMotion, 3)} · ML penceresi ${windowReady}/${windowSize}`;
 }
@@ -263,7 +280,7 @@ function updateMl(info) {
   if (info.label === "ısınıyor") {
     els.mlAlert.className = "mlAlert idle";
     els.mlAlertTitle.textContent = "CNN/LSTM hazırlanıyor";
-    els.mlAlertMeta.textContent = `${info.windowReady || 0}/${info.window || "--"} pencere · ${info.tones || "--"} tone`;
+    els.mlAlertMeta.textContent = `${info.windowReady || 0}/${formatWindows(info)} pencere · ${formatModelShape(info)}`;
     return;
   }
   const confidence = Number(info.confidence || info.handMotionProbability || 0);
@@ -283,11 +300,11 @@ function updateMl(info) {
   if (info.active) {
     els.mlAlert.className = "mlAlert active";
     els.mlAlertTitle.textContent = `Alarm: ${info.label}`;
-    els.mlAlertMeta.textContent = `${info.model} · güven ${pct}${probs ? ` · ${probs}` : ""}${gate}`;
+    els.mlAlertMeta.textContent = `${info.model} · ${formatModelShape(info)} · güven ${pct}${probs ? ` · ${probs}` : ""}${gate}`;
   } else {
     els.mlAlert.className = "mlAlert clear";
     els.mlAlertTitle.textContent = `Normal: ${info.label || "bekliyor"}`;
-    els.mlAlertMeta.textContent = `${info.model} · güven ${pct}${probs ? ` · ${probs}` : ""}${gate}${suppressed}`;
+    els.mlAlertMeta.textContent = `${info.model} · ${formatModelShape(info)} · güven ${pct}${probs ? ` · ${probs}` : ""}${gate}${suppressed}`;
   }
 }
 

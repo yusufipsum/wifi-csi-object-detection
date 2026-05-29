@@ -37,7 +37,17 @@ Bu projedeki ML dataset'te yalnızca amplitüd tarafı kullanılmıştır:
 |H_k(t)|
 ```
 
-Faz bilgisi bu modelde kullanılmamıştır. Bunun sebebi, Wi-Fi CSI fazının donanım saat kayması, CFO/SFO, paket başlangıç kayması ve sürücü kaynaklı ofsetlerden ciddi şekilde etkilenebilmesidir. Fazı güvenilir kullanmak için ayrıca kalibrasyon gerekir.
+İlk eğitilen modelde faz bilgisi kullanılmamıştır. Bunun sebebi, Wi-Fi CSI fazının donanım saat kayması, CFO/SFO, paket başlangıç kayması ve sürücü kaynaklı ofsetlerden ciddi şekilde etkilenebilmesidir. Fazı güvenilir kullanmak için ayrıca kalibrasyon gerekir.
+
+Yeni geliştirme hattında faz doğrudan ham haliyle değil, şu kalibrasyonla kaydedilir:
+
+```text
+phi_raw,k(t) = atan2(Q_k(t), I_k(t))
+phi_unwrapped,k(t) = unwrap(phi_raw,k(t))
+phi_residual,k(t) = phi_unwrapped,k(t) - (a_t k + b_t)
+```
+
+Burada `a_t k + b_t`, her frame için subcarrier eksenindeki lineer faz trendidir. Bu trend çıkarılınca `phaseResiduals` alanı elde edilir. Amaç, donanım/senkronizasyon kaynaklı lineer faz kaymasını azaltıp hareketin bıraktığı göreli faz desenini modele verebilmektir.
 
 ## 2. Multipath Yorumu
 
@@ -76,7 +86,7 @@ passage
 hand_motion
 ```
 
-Her `sample` satırında ana girdi:
+İlk dataset'te her `sample` satırında ana girdi:
 
 ```text
 amps: 128 boyutlu log-amplitüd vektörü
@@ -94,6 +104,28 @@ Burada:
 - `x_t,k`: ML modelinin kullandığı log-amplitüd değeri
 
 Log dönüşümünün amacı, çok büyük genlik tepe değerlerinin modeli baskılamasını azaltmak ve değer aralığını sıkıştırmaktır.
+
+Yeni kaydedilecek dataset'te buna ek olarak şu alan bulunur:
+
+```text
+phaseResiduals: 128 boyutlu lineer trendden arındırılmış faz vektörü
+```
+
+Bu sayede çok kanallı model şu özelliklerle eğitilebilir:
+
+```text
+amp
+phase
+amp_delta
+phase_delta
+```
+
+Burada `delta`, ardışık örnekler arasındaki farktır:
+
+```text
+amp_delta_t,k = amp_t,k - amp_{t-1,k}
+phase_delta_t,k = phase_t,k - phase_{t-1,k}
+```
 
 Mevcut veri sayıları:
 
@@ -347,6 +379,76 @@ y_hat = argmax_j p_j
 confidence = max_j p_j
 ```
 
+### 8.4 Çok Ölçekli CNN/LSTM Genişletmesi
+
+Tez hattında model tek pencereye bağlı kalmaz. Aynı karar anı için iki pencere kullanılır:
+
+```text
+W_short = 16
+W_long  = 48
+K = 128 tone
+C = feature channel sayısı
+```
+
+Yeni fazlı modelde kanal sayısı:
+
+```text
+C = 4
+feature channels = [amp, phase, amp_delta, phase_delta]
+```
+
+Her karar anı `t` için iki tensör oluşturulur:
+
+```text
+X_short(t) in R^(16 x C x 128)
+X_long(t)  in R^(48 x C x 128)
+```
+
+Bu iki pencere aynı bitiş anına hizalanır:
+
+```text
+X_short(t) = [x_{t-15}, ..., x_t]
+X_long(t)  = [x_{t-47}, ..., x_t]
+```
+
+Yani kısa ve uzun model dalları farklı olaylara değil, aynı anın farklı zaman bağlamlarına bakar. Kısa dal el hareketi gibi hızlı değişimleri yakalamaya, uzun dal ise `passage`, `sit/stand` drift'i ve boş oda stabilitesini ayırmaya çalışır.
+
+Her frame ortak CNN encoder'dan geçirilir:
+
+```text
+z_tau = E(x_tau)
+E: R^(C x 128) -> R^1024
+```
+
+Sonra iki ayrı BiLSTM dalı kullanılır:
+
+```text
+r_16 = BiLSTM_16(E(X_short))
+r_48 = BiLSTM_48(E(X_long))
+```
+
+Son temsil bu iki bağlamın birleşimidir:
+
+```text
+r = concat(r_16, r_48)
+```
+
+Sınıflandırıcı:
+
+```text
+o = W r + b
+p = softmax(o)
+```
+
+Bu yapı pratikte şu soruyu sorar:
+
+```text
+"Son birkaç saniyede hızlı bir el izi var mı?"
+"Aynı anda daha uzun bağlam boş oda/oturma/ayakta durma/passage ile uyumlu mu?"
+```
+
+Bu yüzden çok ölçekli model, sadece mikro hareketi büyütmek yerine, mikro hareketi makro bağlamla birlikte sınar. Bu boş oda false positive problemini azaltmak için daha savunulabilir bir yoldur.
+
 ## 9. Kayıp Fonksiyonu
 
 Sınıf dengesizliği olduğu için weighted cross entropy kullanıldı:
@@ -499,7 +601,7 @@ Yorum:
 Modelin `hand_motion` veya `passage` demesi tek başına alarm kaydı üretmez. Ek koşullar:
 
 ```text
-confidence >= 0.80
+confidence >= 0.85
 motionScore >= 0.05
 packetRate >= 5 pkt/s
 same-label streak >= 2
@@ -522,7 +624,7 @@ Alarm adaylığı:
 ```text
 candidate_t =
   1 if y_hat_t in {hand_motion, passage}
-       and c_t >= 0.80
+       and c_t >= 0.85
        and motionScore_t >= 0.05
        and packetRate_t >= 5
   0 otherwise
@@ -552,16 +654,16 @@ Sonuç 0 ile 1 civarına sıkıştırılır. Bu skor, "model alarm dedi ama CSI'
 Dataset örnekleri her CSI frame'inde değil, kayıt sırasında belirli aralıklarla yazıldı:
 
 ```text
-DATASET_FRAME_STRIDE = 12
+DATASET_FRAME_STRIDE = 6
 ```
 
 Bu yüzden canlı sistemde model de her frame'de çalıştırılmaz:
 
 ```text
-MODEL_INFER_STRIDE = 12
+MODEL_INFER_STRIDE = 6
 ```
 
-Sebep: Model eğitimde 24 örneklik pencereyi belirli bir fiziksel zaman ölçeğinde gördü. Canlıda her frame'i pencereye koymak, modelin gördüğü zaman ölçeğini yaklaşık 12 kat kısaltır. Bu durum boş odada yanlış alarm üretme riskini artırabilir.
+Sebep: Model eğitimde belirli örnekleme temposu ve pencere uzunluğuyla eğitilir. `multiscale_physical_v1` profilinde hedef pencereler 16 ve 48 örnektir. Canlıda her frame'i pencereye koymak, modelin gördüğü zaman ölçeğini yaklaşık 6 kat kısaltır. Bu durum boş odada yanlış alarm üretme riskini artırabilir.
 
 ## 17. Sonuçların Yorumu
 
@@ -633,6 +735,8 @@ data/csi/reports/training_run_2026-05-25.md
 data/csi/models/best_csi_cnn_lstm_temporal.report.json
 tools/csi_ml/prepare_temporal_splits.py
 tools/csi_ml/train_temporal_cnn_lstm.py
+tools/csi_ml/prepare_multiscale_splits.py
+tools/csi_ml/train_multiscale_cnn_lstm.py
 ```
 
 Model ağırlığı gerekiyorsa:
@@ -643,6 +747,68 @@ data/csi/models/best_csi_cnn_lstm_temporal.pt
 
 Ham CSI paketleri üzerinden yeniden işleme yapılacaksa pcap kayıtları da paylaşılabilir. Ancak mevcut ML dataset'i amplitüd-log vektörleriyle çalışmak için yeterlidir.
 
-## 20. Kısa Özet
+## 20. Yeni Fiziksel Özellik Pipeline'ı
 
-Bu projede CSI verisi, zaman içinde değişen 128 boyutlu log-amplitüd vektörleri olarak ele alındı. Ardışık 24 örnek bir zaman-frekans matrisi oluşturdu. Her pencere tone bazında normalize edildi. CNN, subcarrier eksenindeki lokal frekans örüntülerini; BiLSTM ise bu örüntülerin zaman içindeki evrimini öğrendi. Model weighted cross entropy ile beş sınıflı olarak eğitildi. Canlı sistemde `hand_motion` ve `passage` sınıfları alarm olarak yorumlandı; yanlış pozitifleri azaltmak için confidence, motionScore, packetRate, streak ve cooldown içeren ek bir karar kapısı kullanıldı.
+Fazlı yeni kayıtlar toplandıktan sonra çok kanallı dataset şu komutla hazırlanır:
+
+```bash
+python tools/csi_ml/prepare_temporal_splits.py data/csi/raw \
+  -o data/csi/csi_temporal_physical_w16_s4.npz \
+  --window 16 \
+  --stride 4 \
+  --train-ratio 0.60 \
+  --val-ratio 0.20 \
+  --purge 16 \
+  --features amp,phase,amp_delta,phase_delta
+```
+
+Bu durumda tek pencere şu tensör olur:
+
+```text
+X in R^(16 x 4 x 128)
+```
+
+Boyutların anlamı:
+
+```text
+16  = zaman örneği
+4   = feature kanalı
+128 = tone/subcarrier
+```
+
+Eğitim:
+
+```bash
+python tools/csi_ml/train_temporal_cnn_lstm.py data/csi/csi_temporal_physical_w16_s4.npz \
+  -o data/csi/models/csi_cnn_lstm_physical_w16_s4.pt \
+  --epochs 80 \
+  --patience 14
+```
+
+Model mimarisi aynı kalır; yalnızca ilk Conv1D katmanı artık `in_channels=4` kullanır. Böylece CNN aynı anda amplitüd, faz kalıntısı ve bunların zamansal türevlerini subcarrier ekseninde işler.
+
+Tez için tercih edilen çok ölçekli sürüm ise şu komutlarla hazırlanır:
+
+```bash
+python tools/csi_ml/prepare_multiscale_splits.py data/csi/raw_phase \
+  -o data/csi/csi_multiscale_physical_w16_w48_s4.npz \
+  --windows 16,48 \
+  --stride 4 \
+  --train-ratio 0.60 \
+  --val-ratio 0.20 \
+  --purge 32 \
+  --features amp,phase,amp_delta,phase_delta
+
+python tools/csi_ml/train_multiscale_cnn_lstm.py data/csi/csi_multiscale_physical_w16_w48_s4.npz \
+  -o data/csi/models/csi_cnn_lstm_multiscale_w16_w48.pt \
+  --epochs 80 \
+  --patience 14
+```
+
+Bu modelin checkpoint'i canlı backend tarafından doğrudan okunabilir. Backend `windows=[16,48]` alanını gördüğünde buffer uzunluğunu 48 sample'a çıkarır, her karar anında son 16 ve son 48 sample'ı ayrı ayrı normalize eder ve modeli iki girdiyle çalıştırır.
+
+## 21. Kısa Özet
+
+Bu projede CSI verisi, zaman içinde değişen 128 boyutlu log-amplitüd vektörleri olarak ele alındı. İlk modelde ardışık 24 örnek bir zaman-frekans matrisi oluşturdu. Her pencere tone bazında normalize edildi. CNN, subcarrier eksenindeki lokal frekans örüntülerini; BiLSTM ise bu örüntülerin zaman içindeki evrimini öğrendi. Model weighted cross entropy ile beş sınıflı olarak eğitildi. Canlı sistemde `hand_motion` ve `passage` sınıfları alarm olarak yorumlandı; yanlış pozitifleri azaltmak için confidence, motionScore, packetRate, streak ve cooldown içeren ek bir karar kapısı kullanıldı.
+
+Yeni geliştirme hattında bu yapı amplitüd-only olmaktan çıkarılıp `amp + phase + amp_delta + phase_delta` kanallarına genişletildi. Ayrıca tek pencere yerine aynı karar anına hizalanmış 16 ve 48 sample'lık iki pencere kullanılacak şekilde çok ölçekli CNN/LSTM mimarisi eklendi. Bu, modeli fiziksel kanal değişimlerine daha duyarlı hale getirir ve kısa el hareketlerini uzun bağlamla doğrulamaya yardımcı olur; ancak gerçek ToF/AoA düzeyinde ayrıştırma için yine çoklu anten, daha geniş bant veya ek alıcı/verici linkleri gerekebilir.

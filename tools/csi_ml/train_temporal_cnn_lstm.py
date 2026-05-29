@@ -11,10 +11,19 @@ from torch.utils.data import DataLoader, TensorDataset
 
 
 class CsiCnnLstmV2(nn.Module):
-    def __init__(self, tones, classes, conv_channels=32, hidden=64, dropout=0.35, bidirectional=True):
+    def __init__(
+        self,
+        tones,
+        classes,
+        input_channels=1,
+        conv_channels=32,
+        hidden=64,
+        dropout=0.35,
+        bidirectional=True,
+    ):
         super().__init__()
         self.encoder = nn.Sequential(
-            nn.Conv1d(1, conv_channels, kernel_size=7, padding=3),
+            nn.Conv1d(input_channels, conv_channels, kernel_size=7, padding=3),
             nn.BatchNorm1d(conv_channels),
             nn.GELU(),
             nn.MaxPool1d(2),
@@ -40,8 +49,14 @@ class CsiCnnLstmV2(nn.Module):
         )
 
     def forward(self, x):
-        batch, steps, tones = x.shape
-        x = x.reshape(batch * steps, 1, tones)
+        if x.dim() == 3:
+            batch, steps, tones = x.shape
+            x = x.reshape(batch * steps, 1, tones)
+        elif x.dim() == 4:
+            batch, steps, channels, tones = x.shape
+            x = x.reshape(batch * steps, channels, tones)
+        else:
+            raise ValueError(f"expected 3D or 4D input, got shape {tuple(x.shape)}")
         x = self.encoder(x)
         x = x.reshape(batch, steps, -1)
         out, _ = self.lstm(x)
@@ -59,17 +74,28 @@ def seed_everything(seed):
 def augment_batch(x, noise_std=0.025, time_mask=0.10, tone_mask=0.06):
     if noise_std > 0:
         x = x + torch.randn_like(x) * noise_std
-    batch, steps, tones = x.shape
+    if x.dim() == 3:
+        batch, steps, tones = x.shape
+        channel_axis = None
+    else:
+        batch, steps, _, tones = x.shape
+        channel_axis = 2
     if time_mask > 0 and steps > 4:
         mask_len = max(1, int(steps * time_mask))
         for idx in range(batch):
             start = random.randint(0, max(0, steps - mask_len))
-            x[idx, start:start + mask_len, :] = 0
+            if channel_axis is None:
+                x[idx, start:start + mask_len, :] = 0
+            else:
+                x[idx, start:start + mask_len, :, :] = 0
     if tone_mask > 0 and tones > 8:
         mask_len = max(1, int(tones * tone_mask))
         for idx in range(batch):
             start = random.randint(0, max(0, tones - mask_len))
-            x[idx, :, start:start + mask_len] = 0
+            if channel_axis is None:
+                x[idx, :, start:start + mask_len] = 0
+            else:
+                x[idx, :, :, start:start + mask_len] = 0
     return x
 
 
@@ -157,6 +183,18 @@ def main():
     x_test = data["x_test"]
     y_test = data["y_test"]
     classes = len(labels)
+    if "featureNames" in data.files:
+        feature_names = [str(item) for item in data["featureNames"].tolist()]
+    else:
+        feature_names = ["amp"]
+    if x_train.ndim == 3:
+        input_channels = 1
+        tones = int(x_train.shape[-1])
+    elif x_train.ndim == 4:
+        input_channels = int(x_train.shape[2])
+        tones = int(x_train.shape[-1])
+    else:
+        raise SystemExit(f"Unsupported x_train shape: {x_train.shape}")
 
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
     train_loader = make_loader(x_train, y_train, args.batch_size, True)
@@ -164,8 +202,9 @@ def main():
     test_loader = make_loader(x_test, y_test, args.batch_size, False)
 
     model = CsiCnnLstmV2(
-        tones=x_train.shape[-1],
+        tones=tones,
         classes=classes,
+        input_channels=input_channels,
         bidirectional=not args.no_bidirectional,
     ).to(device)
 
@@ -234,8 +273,10 @@ def main():
         "model": "csi_cnn_lstm_temporal_v2",
         "model_state": model.state_dict(),
         "labels": labels,
-        "tones": int(x_train.shape[-1]),
+        "tones": tones,
         "window": int(x_train.shape[1]),
+        "inputChannels": input_channels,
+        "featureNames": feature_names,
         "bidirectional": not args.no_bidirectional,
         "classWeights": class_weights.tolist(),
         "bestEpoch": best["epoch"],
@@ -254,6 +295,9 @@ def main():
         "epochsRequested": args.epochs,
         "epochsRun": len(history),
         "bestEpoch": best["epoch"],
+        "inputShape": list(x_train.shape[1:]),
+        "inputChannels": input_channels,
+        "featureNames": feature_names,
         "classWeights": {label: float(class_weights[idx]) for idx, label in enumerate(labels)},
         "validation": val_metrics,
         "validationConfusion": val_matrix.tolist(),

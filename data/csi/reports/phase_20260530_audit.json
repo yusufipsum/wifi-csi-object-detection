@@ -1,0 +1,396 @@
+{
+  "files": [
+    {
+      "path": "data/csi/raw_phase_20260530/empty-20260529-225105.ndjson",
+      "file": "empty-20260529-225105.ndjson",
+      "label": "empty",
+      "samples": 2786,
+      "durationSeconds": 986.129,
+      "schemaVersion": 2,
+      "feature": "log10_amplitude+linear_detrended_phase",
+      "features": [
+        "amps",
+        "phaseResiduals"
+      ],
+      "phaseCalibration": "unwrap_per_frame_then_remove_linear_trend_over_tones",
+      "ampToneLengths": {
+        "count": 2786,
+        "min": 128.0,
+        "mean": 128.0,
+        "p90": 128.0,
+        "max": 128.0
+      },
+      "phaseToneLengths": {
+        "count": 2786,
+        "min": 128.0,
+        "mean": 128.0,
+        "p90": 128.0,
+        "max": 128.0
+      },
+      "missingPhase": 0,
+      "badAmpTones": 0,
+      "badPhaseTones": 0,
+      "packetRate": {
+        "count": 2786,
+        "min": 1.0,
+        "mean": 11.22361809045226,
+        "p90": 18.0,
+        "max": 34.0
+      },
+      "motionScore": {
+        "count": 2786,
+        "min": 0.00458,
+        "mean": 0.13129777817659732,
+        "p90": 0.23446,
+        "max": 1.0
+      },
+      "rssi": {
+        "count": 2786,
+        "min": -55.0,
+        "mean": -45.517587939698494,
+        "p90": -45.0,
+        "max": -43.0
+      },
+      "warnings": []
+    },
+    {
+      "path": "data/csi/raw_phase_20260530/empty-20260529-230809.ndjson",
+      "file": "empty-20260529-230809.ndjson",
+      "label": "empty",
+      "samples": 2886,
+      "durationSeconds": 1096.725,
+      "schemaVersion": 2,
+      "feature": "log10_amplitude+linear_detrended_phase",
+      "features": [
+        "amps",
+        "phaseResiduals"
+      ],
+      "phaseCalibration": "unwrap_per_frame_then_remove_linear_trend_over_tones",
+      "ampToneLengths": {
+        "count": 2886,
+        "min": 128.0,
+        "mean": 128.0,
+        "p90": 128.0,
+        "max": 128.0
+      },
+      "phaseToneLengths": {
+        "count": 2886,
+        "min": 128.0,
+        "mean": 128.0,
+        "p90": 128.0,
+        "max": 128.0
+      },
+      "missingPhase": 0,
+      "badAmpTones": 0,
+      "badPhaseTones": 0,
+      "packetRate": {
+        "count": 2886,
+        "min": 1.0,
+        "mean": 11.000693000693001,
+        "p90": 18.0,
+        "max": 36.0
+      },
+      "motionScore": {
+        "count": 2886,
+        "min": 0.00462,
+        "mean": 0.14193656964656975,
+        "p90": 0.2667,
+        "max": 1.0
+      },
+      "rssi": {
+        "count": 2886,
+        "min": -55.0,
+        "mean": -45.85585585585586,
+        "p90": -44.0,
+        "max": -43.0
+      },
+      "warnings": []
+    },
+    {
+      "path": "data/csi/raw_phase_20260530/empty-20260529-235132.ndjson",
+      "file": "empty-20260529-235132.ndjson",
+      "label": "empty",
+      "samples": 2412,
+      "durationSeconds": 975.882,
+      "schemaVersion": 2,
+      "feature": "log10_amplitude+linear_detrended_phase",
+      "features": [
+        "amps",
+        "phaseResiduals"
+      ],
+      "phaseCalibration": "unwrap_per_frame_then_remove_linear_trend_over_tones",
+      "ampToneLengths": {
+        "count": 2412,
+        "min": 128.0,
+        "mean": 128.0,
+        "p90": 128.0,
+        "max": 128.0
+      },
+      "phaseToneLengths": {
+        "count": 2412,
+        "min": 128.0,
+        "mean": 128.0,
+        "p90": 128.0,
+        "max": 128.0
+      },
+      "missingPhase": 0,
+      "badAmpTones": 0,
+      "badPhaseTones": 0,
+      "packetRate": {
+        "count": 2412,
+        "min": 1.0,
+        "mean": 10.449004975124378,
+        "p90": 17.0,
+        "max": 33.0
+      },
+      "motionScore": {
+        "count": 2412,
+        "min": 0.00462,
+        "mean": 0.11287406716417915,
+        "p90": 0.26305,
+        "max": 1.0
+      },
+      "rssi": {
+        "count": 2412,
+        "min": -51.0,
+        "mean": -45.24543946932007,
+        "p90": -44.0,
+        "max": -43.0
+      },
+      "warnings": []
+    },
+    {
+      "path": "data/csi/raw_phase_20260530/hand_motion-20260530-010105.ndjson",
+      "file": "hand_motion-20260530-010105.ndjson",
+      "label": "hand_motion",
+      "samples": 1900,
+      "durationSeconds": 701.469,
+      "schemaVersion": 2,
+      "feature": "log10_amplitude+linear_detrended_phase",
+      "features": [
+        "amps",
+        "phaseResiduals"
+      ],
+      "phaseCalibration": "unwrap_per_frame_then_remove_linear_trend_over_tones",
+      "ampToneLengths": {
+        "count": 1900,
+        "min": 128.0,
+        "mean": 128.0,
+        "p90": 128.0,
+        "max": 128.0
+      },
+      "phaseToneLengths": {
+        "count": 1900,
+        "min": 128.0,
+        "mean": 128.0,
+        "p90": 128.0,
+        "max": 128.0
+      },
+      "missingPhase": 0,
+      "badAmpTones": 0,
+      "badPhaseTones": 0,
+      "packetRate": {
+        "count": 1900,
+        "min": 1.0,
+        "mean": 10.864736842105263,
+        "p90": 18.0,
+        "max": 28.0
+      },
+      "motionScore": {
+        "count": 1900,
+        "min": 0.0056,
+        "mean": 0.11338327894736838,
+        "p90": 0.23487,
+        "max": 1.0
+      },
+      "rssi": {
+        "count": 1900,
+        "min": -57.0,
+        "mean": -47.34842105263158,
+        "p90": -46.0,
+        "max": -44.0
+      },
+      "warnings": []
+    },
+    {
+      "path": "data/csi/raw_phase_20260530/hand_motion-20260530-012008.ndjson",
+      "file": "hand_motion-20260530-012008.ndjson",
+      "label": "hand_motion",
+      "samples": 2060,
+      "durationSeconds": 822.297,
+      "schemaVersion": 2,
+      "feature": "log10_amplitude+linear_detrended_phase",
+      "features": [
+        "amps",
+        "phaseResiduals"
+      ],
+      "phaseCalibration": "unwrap_per_frame_then_remove_linear_trend_over_tones",
+      "ampToneLengths": {
+        "count": 2060,
+        "min": 128.0,
+        "mean": 128.0,
+        "p90": 128.0,
+        "max": 128.0
+      },
+      "phaseToneLengths": {
+        "count": 2060,
+        "min": 128.0,
+        "mean": 128.0,
+        "p90": 128.0,
+        "max": 128.0
+      },
+      "missingPhase": 0,
+      "badAmpTones": 0,
+      "badPhaseTones": 0,
+      "packetRate": {
+        "count": 2060,
+        "min": 1.0,
+        "mean": 10.688349514563107,
+        "p90": 18.0,
+        "max": 32.0
+      },
+      "motionScore": {
+        "count": 2060,
+        "min": 0.00611,
+        "mean": 0.1538264271844661,
+        "p90": 0.30471,
+        "max": 1.0
+      },
+      "rssi": {
+        "count": 2060,
+        "min": -68.0,
+        "mean": -48.615533980582526,
+        "p90": -46.0,
+        "max": -44.0
+      },
+      "warnings": []
+    },
+    {
+      "path": "data/csi/raw_phase_20260530/passage-20260530-002230.ndjson",
+      "file": "passage-20260530-002230.ndjson",
+      "label": "passage",
+      "samples": 2530,
+      "durationSeconds": 941.083,
+      "schemaVersion": 2,
+      "feature": "log10_amplitude+linear_detrended_phase",
+      "features": [
+        "amps",
+        "phaseResiduals"
+      ],
+      "phaseCalibration": "unwrap_per_frame_then_remove_linear_trend_over_tones",
+      "ampToneLengths": {
+        "count": 2530,
+        "min": 128.0,
+        "mean": 128.0,
+        "p90": 128.0,
+        "max": 128.0
+      },
+      "phaseToneLengths": {
+        "count": 2530,
+        "min": 128.0,
+        "mean": 128.0,
+        "p90": 128.0,
+        "max": 128.0
+      },
+      "missingPhase": 0,
+      "badAmpTones": 0,
+      "badPhaseTones": 0,
+      "packetRate": {
+        "count": 2530,
+        "min": 1.0,
+        "mean": 11.955731225296443,
+        "p90": 19.0,
+        "max": 34.0
+      },
+      "motionScore": {
+        "count": 2530,
+        "min": 0.00458,
+        "mean": 0.15149568379446632,
+        "p90": 0.28211,
+        "max": 1.0
+      },
+      "rssi": {
+        "count": 2530,
+        "min": -59.0,
+        "mean": -45.85138339920949,
+        "p90": -44.0,
+        "max": -42.0
+      },
+      "warnings": []
+    },
+    {
+      "path": "data/csi/raw_phase_20260530/passage-20260530-003846.ndjson",
+      "file": "passage-20260530-003846.ndjson",
+      "label": "passage",
+      "samples": 2433,
+      "durationSeconds": 925.708,
+      "schemaVersion": 2,
+      "feature": "log10_amplitude+linear_detrended_phase",
+      "features": [
+        "amps",
+        "phaseResiduals"
+      ],
+      "phaseCalibration": "unwrap_per_frame_then_remove_linear_trend_over_tones",
+      "ampToneLengths": {
+        "count": 2433,
+        "min": 128.0,
+        "mean": 128.0,
+        "p90": 128.0,
+        "max": 128.0
+      },
+      "phaseToneLengths": {
+        "count": 2433,
+        "min": 128.0,
+        "mean": 128.0,
+        "p90": 128.0,
+        "max": 128.0
+      },
+      "missingPhase": 0,
+      "badAmpTones": 0,
+      "badPhaseTones": 0,
+      "packetRate": {
+        "count": 2433,
+        "min": 1.0,
+        "mean": 10.589395807644882,
+        "p90": 17.0,
+        "max": 35.0
+      },
+      "motionScore": {
+        "count": 2433,
+        "min": 0.00485,
+        "mean": 0.13895349773941618,
+        "p90": 0.26541,
+        "max": 1.0
+      },
+      "rssi": {
+        "count": 2433,
+        "min": -61.0,
+        "mean": -45.87505137690095,
+        "p90": -44.0,
+        "max": -41.0
+      },
+      "warnings": []
+    }
+  ],
+  "labels": {
+    "empty": {
+      "files": 3,
+      "samples": 8084,
+      "durationSeconds": 3058.736,
+      "phaseReady": true
+    },
+    "hand_motion": {
+      "files": 2,
+      "samples": 3960,
+      "durationSeconds": 1523.766,
+      "phaseReady": true
+    },
+    "passage": {
+      "files": 2,
+      "samples": 4963,
+      "durationSeconds": 1866.791,
+      "phaseReady": true
+    }
+  },
+  "issues": []
+}

@@ -1,0 +1,811 @@
+{
+  "labels": [
+    "empty",
+    "hand_motion",
+    "passage"
+  ],
+  "dataset": "data/csi/csi_multiscale_phase_20260530_w12_w36_holdout.npz",
+  "output": "data/csi/models/csi_cnn_lstm_multiscale_phase_20260530_w12_w36_holdout.pt",
+  "device": "mps",
+  "epochsRequested": 80,
+  "epochsRun": 21,
+  "bestEpoch": 7,
+  "windows": [
+    12,
+    36
+  ],
+  "inputShapes": {
+    "12": [
+      12,
+      4,
+      128
+    ],
+    "36": [
+      36,
+      4,
+      128
+    ]
+  },
+  "inputChannels": 4,
+  "featureNames": [
+    "amp",
+    "phase",
+    "amp_delta",
+    "phase_delta"
+  ],
+  "classWeights": {
+    "empty": 0.708734929561615,
+    "hand_motion": 1.2292593717575073,
+    "passage": 1.062005877494812
+  },
+  "validation": {
+    "accuracy": 0.9102040816326531,
+    "macroF1": 0.9088357221199784,
+    "total": 490,
+    "correct": 446,
+    "perClass": [
+      {
+        "precision": 0.9314079422382672,
+        "recall": 0.9247311827956989,
+        "f1": 0.9280575539568345,
+        "support": 279
+      },
+      {
+        "precision": 0.9880952380952381,
+        "recall": 0.9431818181818182,
+        "f1": 0.9651162790697674,
+        "support": 88
+      },
+      {
+        "precision": 0.813953488372093,
+        "recall": 0.8536585365853658,
+        "f1": 0.8333333333333333,
+        "support": 123
+      }
+    ],
+    "loss": 0.27345523408481054
+  },
+  "validationConfusion": [
+    [
+      258,
+      1,
+      20
+    ],
+    [
+      1,
+      83,
+      4
+    ],
+    [
+      18,
+      0,
+      105
+    ]
+  ],
+  "test": {
+    "accuracy": 0.7279670975323149,
+    "macroF1": 0.6928878770450831,
+    "total": 1702,
+    "correct": 1239,
+    "perClass": [
+      {
+        "precision": 0.8194842406876791,
+        "recall": 0.9613445378151261,
+        "f1": 0.8847641144624904,
+        "support": 595
+      },
+      {
+        "precision": 0.91005291005291,
+        "recall": 0.33925049309664695,
+        "f1": 0.49425287356321845,
+        "support": 507
+      },
+      {
+        "precision": 0.6073619631901841,
+        "recall": 0.825,
+        "f1": 0.6996466431095407,
+        "support": 600
+      }
+    ],
+    "loss": 1.0078512688641263
+  },
+  "testConfusion": [
+    [
+      572,
+      0,
+      23
+    ],
+    [
+      38,
+      172,
+      297
+    ],
+    [
+      88,
+      17,
+      495
+    ]
+  ],
+  "history": [
+    {
+      "epoch": 1,
+      "trainLoss": 1.012668391889777,
+      "valAccuracy": 0.5428571428571428,
+      "valMacroF1": 0.568771586502726,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 2,
+      "trainLoss": 0.6196603326758078,
+      "valAccuracy": 0.7428571428571429,
+      "valMacroF1": 0.764369550878628,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 3,
+      "trainLoss": 0.37962941628349717,
+      "valAccuracy": 0.7755102040816326,
+      "valMacroF1": 0.7992331259887728,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 4,
+      "trainLoss": 0.23159148901208373,
+      "valAccuracy": 0.8469387755102041,
+      "valMacroF1": 0.8526643145829191,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 5,
+      "trainLoss": 0.1857198547602685,
+      "valAccuracy": 0.8244897959183674,
+      "valMacroF1": 0.8360712554263569,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 6,
+      "trainLoss": 0.12748475237326187,
+      "valAccuracy": 0.9061224489795918,
+      "valMacroF1": 0.8998676001301783,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 7,
+      "trainLoss": 0.09626280285479609,
+      "valAccuracy": 0.9102040816326531,
+      "valMacroF1": 0.9088357221199784,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 8,
+      "trainLoss": 0.06649488610915902,
+      "valAccuracy": 0.8795918367346939,
+      "valMacroF1": 0.880276732526435,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 9,
+      "trainLoss": 0.04617179274820715,
+      "valAccuracy": 0.9122448979591836,
+      "valMacroF1": 0.9065097994197105,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 10,
+      "trainLoss": 0.05549569377167658,
+      "valAccuracy": 0.8285714285714286,
+      "valMacroF1": 0.8328654958346492,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 11,
+      "trainLoss": 0.051732521438740256,
+      "valAccuracy": 0.8877551020408163,
+      "valMacroF1": 0.8827506005724229,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 12,
+      "trainLoss": 0.04238999456413521,
+      "valAccuracy": 0.8918367346938776,
+      "valMacroF1": 0.8838315509585426,
+      "lr": 0.0007
+    },
+    {
+      "epoch": 13,
+      "trainLoss": 0.04501375711084274,
+      "valAccuracy": 0.8775510204081632,
+      "valMacroF1": 0.8812605917063111,
+      "lr": 0.00035
+    },
+    {
+      "epoch": 14,
+      "trainLoss": 0.013770526811896154,
+      "valAccuracy": 0.9102040816326531,
+      "valMacroF1": 0.9065497426755282,
+      "lr": 0.00035
+    },
+    {
+      "epoch": 15,
+      "trainLoss": 0.01402576199986718,
+      "valAccuracy": 0.8510204081632653,
+      "valMacroF1": 0.8602658994015061,
+      "lr": 0.00035
+    },
+    {
+      "epoch": 16,
+      "trainLoss": 0.004647210618473343,
+      "valAccuracy": 0.8775510204081632,
+      "valMacroF1": 0.8799309896708566,
+      "lr": 0.00035
+    },
+    {
+      "epoch": 17,
+      "trainLoss": 0.010180969267971967,
+      "valAccuracy": 0.8816326530612245,
+      "valMacroF1": 0.8864975202833688,
+      "lr": 0.00035
+    },
+    {
+      "epoch": 18,
+      "trainLoss": 0.0022936972456576287,
+      "valAccuracy": 0.8836734693877552,
+      "valMacroF1": 0.8844550445709306,
+      "lr": 0.00035
+    },
+    {
+      "epoch": 19,
+      "trainLoss": 0.009856025934650386,
+      "valAccuracy": 0.9040816326530612,
+      "valMacroF1": 0.9039312999881609,
+      "lr": 0.000175
+    },
+    {
+      "epoch": 20,
+      "trainLoss": 0.0018191255327441138,
+      "valAccuracy": 0.8877551020408163,
+      "valMacroF1": 0.886461677617535,
+      "lr": 0.000175
+    },
+    {
+      "epoch": 21,
+      "trainLoss": 0.006500833763304159,
+      "valAccuracy": 0.8653061224489796,
+      "valMacroF1": 0.8713518695027819,
+      "lr": 0.000175
+    }
+  ],
+  "splitReport": {
+    "modelFamily": "multiscale",
+    "splitMode": "session_holdout_test",
+    "testPolicy": "latest-per-label",
+    "testFiles": [
+      "empty-20260529-235132.ndjson",
+      "hand_motion-20260530-012008.ndjson",
+      "passage-20260530-003846.ndjson"
+    ],
+    "windows": [
+      12,
+      36
+    ],
+    "stride": 4,
+    "trainRatioWithinTrainSessions": 0.78,
+    "purge": 32,
+    "featureNames": [
+      "amp",
+      "phase",
+      "amp_delta",
+      "phase_delta"
+    ],
+    "residualRadius": 15,
+    "alignment": "same_end_time",
+    "sessions": [
+      {
+        "path": "data/csi/raw_phase_20260530/empty-20260529-225105.ndjson",
+        "role": "train_val",
+        "label": "empty",
+        "samples": 2786,
+        "durationSeconds": 986.129,
+        "tones": 128,
+        "channels": 4,
+        "featureNames": [
+          "amp",
+          "phase",
+          "amp_delta",
+          "phase_delta"
+        ],
+        "featureShape": [
+          4,
+          128
+        ],
+        "splitBounds": {
+          "train": [
+            0,
+            2173
+          ],
+          "val": [
+            2205,
+            2786
+          ]
+        },
+        "windows": {
+          "train": 535,
+          "val": 137,
+          "test": 0
+        },
+        "packetRate": {
+          "mean": 11.22361809045226,
+          "min": 1.0,
+          "max": 34.0
+        },
+        "motionScore": {
+          "mean": 0.13129777817659727,
+          "min": 0.00458,
+          "max": 1.0
+        },
+        "rssi": {
+          "mean": -45.517587939698494,
+          "min": -55.0,
+          "max": -43.0
+        },
+        "meta": {
+          "type": "session",
+          "createdAt": 1780084265110,
+          "channel": "48/80",
+          "sourceMac": "88:a2:9e:5d:4e:a6",
+          "distanceM": 2.0,
+          "label": "empty",
+          "note": "20dk bos",
+          "pcap": "/home/admin/csi/captures/csi-alpha-web-20260529-225105.pcap",
+          "tones": 128,
+          "schemaVersion": 2,
+          "profile": "multiscale_physical_v1",
+          "datasetFrameStride": 6,
+          "recommendedTrainingWindow": 16,
+          "recommendedTrainingWindows": [
+            16,
+            48
+          ],
+          "feature": "log10_amplitude+linear_detrended_phase",
+          "features": [
+            "amps",
+            "phaseResiduals"
+          ],
+          "phaseCalibration": "unwrap_per_frame_then_remove_linear_trend_over_tones"
+        }
+      },
+      {
+        "path": "data/csi/raw_phase_20260530/empty-20260529-230809.ndjson",
+        "role": "train_val",
+        "label": "empty",
+        "samples": 2886,
+        "durationSeconds": 1096.725,
+        "tones": 128,
+        "channels": 4,
+        "featureNames": [
+          "amp",
+          "phase",
+          "amp_delta",
+          "phase_delta"
+        ],
+        "featureShape": [
+          4,
+          128
+        ],
+        "splitBounds": {
+          "train": [
+            0,
+            2251
+          ],
+          "val": [
+            2283,
+            2886
+          ]
+        },
+        "windows": {
+          "train": 554,
+          "val": 142,
+          "test": 0
+        },
+        "packetRate": {
+          "mean": 11.000693000693001,
+          "min": 1.0,
+          "max": 36.0
+        },
+        "motionScore": {
+          "mean": 0.14193656964656964,
+          "min": 0.00462,
+          "max": 1.0
+        },
+        "rssi": {
+          "mean": -45.85585585585586,
+          "min": -55.0,
+          "max": -43.0
+        },
+        "meta": {
+          "type": "session",
+          "createdAt": 1780085289457,
+          "channel": "48/80",
+          "sourceMac": "88:a2:9e:5d:4e:a6",
+          "distanceM": 2.0,
+          "label": "empty",
+          "note": "15dk bos",
+          "pcap": "/home/admin/csi/captures/csi-alpha-web-20260529-230809.pcap",
+          "tones": 128,
+          "schemaVersion": 2,
+          "profile": "multiscale_physical_v1",
+          "datasetFrameStride": 6,
+          "recommendedTrainingWindow": 16,
+          "recommendedTrainingWindows": [
+            16,
+            48
+          ],
+          "feature": "log10_amplitude+linear_detrended_phase",
+          "features": [
+            "amps",
+            "phaseResiduals"
+          ],
+          "phaseCalibration": "unwrap_per_frame_then_remove_linear_trend_over_tones"
+        }
+      },
+      {
+        "path": "data/csi/raw_phase_20260530/empty-20260529-235132.ndjson",
+        "role": "test",
+        "label": "empty",
+        "samples": 2412,
+        "durationSeconds": 975.882,
+        "tones": 128,
+        "channels": 4,
+        "featureNames": [
+          "amp",
+          "phase",
+          "amp_delta",
+          "phase_delta"
+        ],
+        "featureShape": [
+          4,
+          128
+        ],
+        "splitBounds": {
+          "test": [
+            0,
+            2412
+          ]
+        },
+        "windows": {
+          "train": 0,
+          "val": 0,
+          "test": 595
+        },
+        "packetRate": {
+          "mean": 10.449004975124378,
+          "min": 1.0,
+          "max": 33.0
+        },
+        "motionScore": {
+          "mean": 0.11287406716417911,
+          "min": 0.00462,
+          "max": 1.0
+        },
+        "rssi": {
+          "mean": -45.24543946932007,
+          "min": -51.0,
+          "max": -43.0
+        },
+        "meta": {
+          "type": "session",
+          "createdAt": 1780087892321,
+          "channel": "48/80",
+          "sourceMac": "88:a2:9e:5d:4e:a6",
+          "distanceM": 2.0,
+          "label": "empty",
+          "note": "20dk bos",
+          "pcap": "/home/admin/csi/captures/csi-alpha-web-20260529-235132.pcap",
+          "tones": 128,
+          "schemaVersion": 2,
+          "profile": "multiscale_physical_v1",
+          "datasetFrameStride": 6,
+          "recommendedTrainingWindow": 16,
+          "recommendedTrainingWindows": [
+            16,
+            48
+          ],
+          "feature": "log10_amplitude+linear_detrended_phase",
+          "features": [
+            "amps",
+            "phaseResiduals"
+          ],
+          "phaseCalibration": "unwrap_per_frame_then_remove_linear_trend_over_tones"
+        }
+      },
+      {
+        "path": "data/csi/raw_phase_20260530/hand_motion-20260530-010105.ndjson",
+        "role": "train_val",
+        "label": "hand_motion",
+        "samples": 1900,
+        "durationSeconds": 701.469,
+        "tones": 128,
+        "channels": 4,
+        "featureNames": [
+          "amp",
+          "phase",
+          "amp_delta",
+          "phase_delta"
+        ],
+        "featureShape": [
+          4,
+          128
+        ],
+        "splitBounds": {
+          "train": [
+            0,
+            1482
+          ],
+          "val": [
+            1514,
+            1900
+          ]
+        },
+        "windows": {
+          "train": 362,
+          "val": 88,
+          "test": 0
+        },
+        "packetRate": {
+          "mean": 10.864736842105263,
+          "min": 1.0,
+          "max": 28.0
+        },
+        "motionScore": {
+          "mean": 0.11338327894736841,
+          "min": 0.0056,
+          "max": 1.0
+        },
+        "rssi": {
+          "mean": -47.34842105263158,
+          "min": -57.0,
+          "max": -44.0
+        },
+        "meta": {
+          "type": "session",
+          "createdAt": 1780092065521,
+          "channel": "48/80",
+          "sourceMac": "88:a2:9e:5d:4e:a6",
+          "distanceM": 2.0,
+          "label": "hand_motion",
+          "note": "2 clap",
+          "pcap": "/home/admin/csi/captures/csi-alpha-web-20260530-010105.pcap",
+          "tones": 128,
+          "schemaVersion": 2,
+          "profile": "multiscale_physical_v1",
+          "datasetFrameStride": 6,
+          "recommendedTrainingWindow": 16,
+          "recommendedTrainingWindows": [
+            16,
+            48
+          ],
+          "feature": "log10_amplitude+linear_detrended_phase",
+          "features": [
+            "amps",
+            "phaseResiduals"
+          ],
+          "phaseCalibration": "unwrap_per_frame_then_remove_linear_trend_over_tones"
+        }
+      },
+      {
+        "path": "data/csi/raw_phase_20260530/hand_motion-20260530-012008.ndjson",
+        "role": "test",
+        "label": "hand_motion",
+        "samples": 2060,
+        "durationSeconds": 822.297,
+        "tones": 128,
+        "channels": 4,
+        "featureNames": [
+          "amp",
+          "phase",
+          "amp_delta",
+          "phase_delta"
+        ],
+        "featureShape": [
+          4,
+          128
+        ],
+        "splitBounds": {
+          "test": [
+            0,
+            2060
+          ]
+        },
+        "windows": {
+          "train": 0,
+          "val": 0,
+          "test": 507
+        },
+        "packetRate": {
+          "mean": 10.688349514563107,
+          "min": 1.0,
+          "max": 32.0
+        },
+        "motionScore": {
+          "mean": 0.153826427184466,
+          "min": 0.00611,
+          "max": 1.0
+        },
+        "rssi": {
+          "mean": -48.615533980582526,
+          "min": -68.0,
+          "max": -44.0
+        },
+        "meta": {
+          "type": "session",
+          "createdAt": 1780093208555,
+          "channel": "48/80",
+          "sourceMac": "88:a2:9e:5d:4e:a6",
+          "distanceM": 2.0,
+          "label": "hand_motion",
+          "note": "2 clap",
+          "pcap": "/home/admin/csi/captures/csi-alpha-web-20260530-012008.pcap",
+          "tones": 128,
+          "schemaVersion": 2,
+          "profile": "multiscale_physical_v1",
+          "datasetFrameStride": 6,
+          "recommendedTrainingWindow": 16,
+          "recommendedTrainingWindows": [
+            16,
+            48
+          ],
+          "feature": "log10_amplitude+linear_detrended_phase",
+          "features": [
+            "amps",
+            "phaseResiduals"
+          ],
+          "phaseCalibration": "unwrap_per_frame_then_remove_linear_trend_over_tones"
+        }
+      },
+      {
+        "path": "data/csi/raw_phase_20260530/passage-20260530-002230.ndjson",
+        "role": "train_val",
+        "label": "passage",
+        "samples": 2530,
+        "durationSeconds": 941.083,
+        "tones": 128,
+        "channels": 4,
+        "featureNames": [
+          "amp",
+          "phase",
+          "amp_delta",
+          "phase_delta"
+        ],
+        "featureShape": [
+          4,
+          128
+        ],
+        "splitBounds": {
+          "train": [
+            0,
+            1973
+          ],
+          "val": [
+            2005,
+            2530
+          ]
+        },
+        "windows": {
+          "train": 485,
+          "val": 123,
+          "test": 0
+        },
+        "packetRate": {
+          "mean": 11.955731225296443,
+          "min": 1.0,
+          "max": 34.0
+        },
+        "motionScore": {
+          "mean": 0.1514956837944664,
+          "min": 0.00458,
+          "max": 1.0
+        },
+        "rssi": {
+          "mean": -45.85138339920949,
+          "min": -59.0,
+          "max": -42.0
+        },
+        "meta": {
+          "type": "session",
+          "createdAt": 1780089750173,
+          "channel": "48/80",
+          "sourceMac": "88:a2:9e:5d:4e:a6",
+          "distanceM": 2.0,
+          "label": "passage",
+          "note": "",
+          "pcap": "/home/admin/csi/captures/csi-alpha-web-20260530-002230.pcap",
+          "tones": 128,
+          "schemaVersion": 2,
+          "profile": "multiscale_physical_v1",
+          "datasetFrameStride": 6,
+          "recommendedTrainingWindow": 16,
+          "recommendedTrainingWindows": [
+            16,
+            48
+          ],
+          "feature": "log10_amplitude+linear_detrended_phase",
+          "features": [
+            "amps",
+            "phaseResiduals"
+          ],
+          "phaseCalibration": "unwrap_per_frame_then_remove_linear_trend_over_tones"
+        }
+      },
+      {
+        "path": "data/csi/raw_phase_20260530/passage-20260530-003846.ndjson",
+        "role": "test",
+        "label": "passage",
+        "samples": 2433,
+        "durationSeconds": 925.708,
+        "tones": 128,
+        "channels": 4,
+        "featureNames": [
+          "amp",
+          "phase",
+          "amp_delta",
+          "phase_delta"
+        ],
+        "featureShape": [
+          4,
+          128
+        ],
+        "splitBounds": {
+          "test": [
+            0,
+            2433
+          ]
+        },
+        "windows": {
+          "train": 0,
+          "val": 0,
+          "test": 600
+        },
+        "packetRate": {
+          "mean": 10.589395807644882,
+          "min": 1.0,
+          "max": 35.0
+        },
+        "motionScore": {
+          "mean": 0.13895349773941634,
+          "min": 0.00485,
+          "max": 1.0
+        },
+        "rssi": {
+          "mean": -45.87505137690095,
+          "min": -61.0,
+          "max": -41.0
+        },
+        "meta": {
+          "type": "session",
+          "createdAt": 1780090726917,
+          "channel": "48/80",
+          "sourceMac": "88:a2:9e:5d:4e:a6",
+          "distanceM": 2.0,
+          "label": "passage",
+          "note": "",
+          "pcap": "/home/admin/csi/captures/csi-alpha-web-20260530-003846.pcap",
+          "tones": 128,
+          "schemaVersion": 2,
+          "profile": "multiscale_physical_v1",
+          "datasetFrameStride": 6,
+          "recommendedTrainingWindow": 16,
+          "recommendedTrainingWindows": [
+            16,
+            48
+          ],
+          "feature": "log10_amplitude+linear_detrended_phase",
+          "features": [
+            "amps",
+            "phaseResiduals"
+          ],
+          "phaseCalibration": "unwrap_per_frame_then_remove_linear_trend_over_tones"
+        }
+      }
+    ]
+  }
+}

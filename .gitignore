@@ -2,3 +2,6 @@
 __pycache__/
 *.pyc
 .DS_Store
+
+# Large generated CSI training tensors. Keep these locally or in external storage/LFS.
+data/csi/csi_multiscale_*.npz
