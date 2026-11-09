@@ -1,0 +1,600 @@
+{
+ "createdAt": "2026-11-09 14:39",
+ "engine": "single_box_v1",
+ "config": {
+  "scenario": "room",
+  "armed": true,
+  "txBackend": "ap_udp",
+  "channel": "auto",
+  "txRatePps": 40.0,
+  "txPayloadBytes": 600,
+  "injectChannel": 36,
+  "injectRateMbps": 6.0,
+  "fcFilter": "0x88,0x08",
+  "toneGroups": 56,
+  "modeMatch": 0.9,
+  "maxModes": 6,
+  "phaseWeight": 0.5,
+  "hopS": 0.5,
+  "calibrationS": 60,
+  "calMadK": 8.0,
+  "calPercentile": 99.5,
+  "calMargin": 1.2,
+  "motionEnabled": true,
+  "motionWindowS": 2.0,
+  "motionScale": 1.0,
+  "motionMinThr": 0.002,
+  "noveltyEnabled": true,
+  "motionPowerEnabled": false,
+  "motionOnK": 3,
+  "motionOnN": 4,
+  "motionOffCount": 4,
+  "staticEnabled": true,
+  "staticWindowS": 4.0,
+  "staticScale": 1.0,
+  "staticMinDist": 3.0,
+  "staticQuietS": 2.0,
+  "staticAdaptTauS": 180.0,
+  "rebaselineOnStart": true,
+  "staticAutoRelearnS": 900,
+  "staticOnK": 4,
+  "staticOnN": 6,
+  "staticOffCount": 6,
+  "stateEnabled": true,
+  "stateAlarmLabels": "",
+  "openSetFactor": 2.0,
+  "stateMargin": 0.1,
+  "stateOnK": 3,
+  "stateOnN": 4,
+  "microEnabled": false,
+  "microWindowS": 20.0,
+  "microBandLowHz": 0.15,
+  "microBandHighHz": 0.6,
+  "microScale": 1.0,
+  "microOnK": 3,
+  "microOnN": 4,
+  "signalLossEnabled": true,
+  "minPacketRate": 5.0,
+  "signalLossS": 5.0,
+  "rssiDropEnabled": false,
+  "rssiDropDb": 10.0,
+  "rssiHoldS": 5.0,
+  "alarmCooldownS": 10.0,
+  "releaseRatio": 0.9
+ },
+ "calibration": {
+  "source": "data/csi/captures_phase_20260530/csi-alpha-web-20260529-225105.pcap@150:600",
+  "durationS": 443.5,
+  "frames": 6123,
+  "modes": 1,
+  "thresholds": {
+   "motion": 0.005974,
+   "novelty": 0.15,
+   "power": 0.125312,
+   "static": 2.366739,
+   "micro": null
+  },
+  "stats": {
+   "motionP50": 0.00356,
+   "motionP99": 0.004263,
+   "noveltyP99": 0.0,
+   "staticP99": 1.9213,
+   "microP99": null,
+   "evaluations": 888
+  },
+  "warnings": []
+ },
+ "sessions": [
+  {
+   "label": "empty",
+   "pcap": "data/csi/captures_phase_20260530/csi-alpha-web-20260529-235132.pcap",
+   "segment": [
+    null,
+    null
+   ],
+   "durationS": 976.7,
+   "evaluations": 1951,
+   "frames": 14472,
+   "accepted": 11102,
+   "acceptRatio": 0.767,
+   "rejected": {
+    "rejectedFc": 3370
+   },
+   "activeFraction": {
+    "motion": 0.0,
+    "static": 0.0,
+    "micro": 0.0
+   },
+   "alarms": {},
+   "alarmsPerHour": {},
+   "suppressed": {},
+   "motionValue": {
+    "n": 1935,
+    "p50": 0.003305,
+    "p90": 0.004242,
+    "p99": 0.004812,
+    "max": 0.005379
+   },
+   "motionScore": {
+    "n": 1867,
+    "p50": 0.553857,
+    "p90": 0.711779,
+    "p99": 0.813931,
+    "max": 6.666667
+   },
+   "staticScore": {
+    "n": 1865,
+    "p50": 0.333092,
+    "p90": 0.498187,
+    "p99": 0.640396,
+    "max": 1.266676
+   },
+   "alarmTimesS": []
+  },
+  {
+   "label": "empty_noisy",
+   "pcap": "data/csi/captures_phase_20260530/csi-alpha-web-20260529-225105.pcap",
+   "segment": [
+    null,
+    null
+   ],
+   "durationS": 987.1,
+   "evaluations": 1971,
+   "frames": 16717,
+   "accepted": 13089,
+   "acceptRatio": 0.783,
+   "rejected": {
+    "rejectedFc": 3628
+   },
+   "activeFraction": {
+    "motion": 0.0791,
+    "static": 0.0,
+    "micro": 0.0
+   },
+   "alarms": {
+    "motion": 5,
+    "signal_loss": 1
+   },
+   "alarmsPerHour": {
+    "motion": 18.24,
+    "signal_loss": 3.65
+   },
+   "suppressed": {},
+   "motionValue": {
+    "n": 1937,
+    "p50": 0.00363,
+    "p90": 0.004289,
+    "p99": 0.089261,
+    "max": 0.109624
+   },
+   "motionScore": {
+    "n": 1906,
+    "p50": 0.607943,
+    "p90": 0.717874,
+    "p99": 14.912614,
+    "max": 18.132051
+   },
+   "staticScore": {
+    "n": 1902,
+    "p50": 0.31206,
+    "p90": 0.477105,
+    "p99": 3.0,
+    "max": 3.0
+   },
+   "alarmTimesS": [
+    124.5,
+    711.5,
+    893.5,
+    924.0,
+    946.5,
+    966.5
+   ]
+  },
+  {
+   "label": "empty_noisy",
+   "pcap": "data/csi/captures_phase_20260530/csi-alpha-web-20260529-230809.pcap",
+   "segment": [
+    null,
+    null
+   ],
+   "durationS": 1097.6,
+   "evaluations": 2189,
+   "frames": 17320,
+   "accepted": 13291,
+   "acceptRatio": 0.767,
+   "rejected": {
+    "rejectedFc": 4029
+   },
+   "activeFraction": {
+    "motion": 0.1329,
+    "static": 0.0,
+    "micro": 0.0
+   },
+   "alarms": {
+    "motion": 5,
+    "signal_loss": 1
+   },
+   "alarmsPerHour": {
+    "motion": 16.4,
+    "signal_loss": 3.28
+   },
+   "suppressed": {},
+   "motionValue": {
+    "n": 2114,
+    "p50": 0.003599,
+    "p90": 0.029727,
+    "p99": 0.102003,
+    "max": 0.116128
+   },
+   "motionScore": {
+    "n": 2063,
+    "p50": 0.602083,
+    "p90": 4.907827,
+    "p99": 17.01182,
+    "max": 19.230613
+   },
+   "staticScore": {
+    "n": 2061,
+    "p50": 0.324983,
+    "p90": 3.0,
+    "p99": 3.0,
+    "max": 3.0
+   },
+   "alarmTimesS": [
+    6.0,
+    27.5,
+    52.0,
+    77.0,
+    218.5,
+    404.0
+   ]
+  },
+  {
+   "label": "passage",
+   "pcap": "data/csi/captures_phase_20260530/csi-alpha-web-20260530-002230.pcap",
+   "segment": [
+    null,
+    null
+   ],
+   "durationS": 942.0,
+   "evaluations": 1878,
+   "frames": 15182,
+   "accepted": 11772,
+   "acceptRatio": 0.775,
+   "rejected": {
+    "rejectedFc": 3410
+   },
+   "activeFraction": {
+    "motion": 0.5548,
+    "static": 0.0,
+    "micro": 0.0
+   },
+   "alarms": {
+    "motion": 41
+   },
+   "alarmsPerHour": {
+    "motion": 156.69
+   },
+   "suppressed": {
+    "cooldown": 1
+   },
+   "motionValue": {
+    "n": 1802,
+    "p50": 0.00795,
+    "p90": 0.028518,
+    "p99": 0.03995,
+    "max": 0.059387
+   },
+   "motionScore": {
+    "n": 1730,
+    "p50": 1.665091,
+    "p90": 4.845225,
+    "p99": 6.701816,
+    "max": 9.940889
+   },
+   "staticScore": {
+    "n": 1727,
+    "p50": 0.958343,
+    "p90": 3.580903,
+    "p99": 4.651579,
+    "max": 5.579665
+   },
+   "alarmTimesS": [
+    6.0,
+    22.5,
+    42.5,
+    64.5,
+    82.5,
+    104.5,
+    126.0,
+    148.0,
+    171.0,
+    192.0,
+    211.5,
+    233.0,
+    255.5,
+    276.5,
+    297.5,
+    319.5,
+    341.0,
+    364.5,
+    384.5,
+    409.5,
+    432.5,
+    455.0,
+    477.5,
+    501.0,
+    527.0,
+    547.5,
+    571.0,
+    594.5,
+    615.5,
+    639.5,
+    655.5,
+    679.5,
+    708.5,
+    734.0,
+    758.0,
+    781.0,
+    805.5,
+    830.5,
+    854.5,
+    899.5,
+    923.5
+   ]
+  },
+  {
+   "label": "passage",
+   "pcap": "data/csi/captures_phase_20260530/csi-alpha-web-20260530-003846.pcap",
+   "segment": [
+    null,
+    null
+   ],
+   "durationS": 926.6,
+   "evaluations": 1849,
+   "frames": 14603,
+   "accepted": 11277,
+   "acceptRatio": 0.772,
+   "rejected": {
+    "rejectedFc": 3326
+   },
+   "activeFraction": {
+    "motion": 0.5538,
+    "static": 0.0,
+    "micro": 0.0
+   },
+   "alarms": {
+    "motion": 38
+   },
+   "alarmsPerHour": {
+    "motion": 147.63
+   },
+   "suppressed": {
+    "cooldown": 1
+   },
+   "motionValue": {
+    "n": 1792,
+    "p50": 0.006859,
+    "p90": 0.026468,
+    "p99": 0.045938,
+    "max": 0.107045
+   },
+   "motionScore": {
+    "n": 1750,
+    "p50": 1.29167,
+    "p90": 4.442451,
+    "p99": 7.383537,
+    "max": 17.918429
+   },
+   "staticScore": {
+    "n": 1747,
+    "p50": 0.929758,
+    "p90": 3.825861,
+    "p99": 4.777517,
+    "max": 6.442844
+   },
+   "alarmTimesS": [
+    6.0,
+    28.0,
+    49.0,
+    70.5,
+    94.5,
+    116.5,
+    140.5,
+    166.5,
+    190.0,
+    214.5,
+    239.0,
+    264.5,
+    290.5,
+    313.5,
+    337.0,
+    362.5,
+    387.5,
+    413.5,
+    438.5,
+    465.0,
+    487.5,
+    513.5,
+    537.0,
+    556.5,
+    588.0,
+    613.5,
+    637.0,
+    662.0,
+    687.0,
+    712.0,
+    737.5,
+    761.5,
+    785.5,
+    811.5,
+    837.0,
+    862.5,
+    886.0,
+    909.5
+   ]
+  },
+  {
+   "label": "hand_motion",
+   "pcap": "data/csi/captures_phase_20260530/csi-alpha-web-20260530-010105.pcap",
+   "segment": [
+    null,
+    null
+   ],
+   "durationS": 702.4,
+   "evaluations": 1401,
+   "frames": 11402,
+   "accepted": 8927,
+   "acceptRatio": 0.783,
+   "rejected": {
+    "rejectedFc": 2475
+   },
+   "activeFraction": {
+    "motion": 0.9615,
+    "static": 0.0,
+    "micro": 0.0
+   },
+   "alarms": {
+    "motion": 10
+   },
+   "alarmsPerHour": {
+    "motion": 51.26
+   },
+   "suppressed": {
+    "cooldown": 1
+   },
+   "motionValue": {
+    "n": 1389,
+    "p50": 0.009076,
+    "p90": 0.016016,
+    "p99": 0.021124,
+    "max": 0.030651
+   },
+   "motionScore": {
+    "n": 1375,
+    "p50": 1.542519,
+    "p90": 2.712123,
+    "p99": 3.628389,
+    "max": 6.666667
+   },
+   "staticScore": {
+    "n": 1371,
+    "p50": 3.723677,
+    "p90": 5.928579,
+    "p99": 7.561164,
+    "max": 9.18727
+   },
+   "alarmTimesS": [
+    6.0,
+    77.5,
+    136.0,
+    184.0,
+    218.0,
+    299.5,
+    490.0,
+    513.0,
+    571.0,
+    619.5
+   ]
+  },
+  {
+   "label": "hand_motion",
+   "pcap": "data/csi/captures_phase_20260530/csi-alpha-web-20260530-012008.pcap",
+   "segment": [
+    null,
+    null
+   ],
+   "durationS": 822.9,
+   "evaluations": 1642,
+   "frames": 12361,
+   "accepted": 9329,
+   "acceptRatio": 0.755,
+   "rejected": {
+    "rejectedFc": 3032
+   },
+   "activeFraction": {
+    "motion": 0.9915,
+    "static": 0.0,
+    "micro": 0.0
+   },
+   "alarms": {
+    "motion": 2
+   },
+   "alarmsPerHour": {
+    "motion": 8.75
+   },
+   "suppressed": {},
+   "motionValue": {
+    "n": 1596,
+    "p50": 0.014412,
+    "p90": 0.025643,
+    "p99": 0.03776,
+    "max": 0.04975
+   },
+   "motionScore": {
+    "n": 1552,
+    "p50": 2.45279,
+    "p90": 4.320928,
+    "p99": 6.414649,
+    "max": 8.327837
+   },
+   "staticScore": {
+    "n": 1549,
+    "p50": 14.815233,
+    "p90": 17.143827,
+    "p99": 20.148974,
+    "max": 23.763355
+   },
+   "alarmTimesS": [
+    6.0,
+    43.0
+   ]
+  }
+ ],
+ "summary": {
+  "Negatif (normal) süre": "51.0 dk",
+  "Negatif oturumlarda hareket alarmı": "10 (11.76/saat)",
+  "Negatif oturumlarda tüm alarmlar": "12 (14.11/saat)",
+  "Negatif pencere yanlış-aktif oranı (hareket)": "%7.07",
+  "Pozitif oturum pencere aktif oranı (hareket, ort.)": "%76.5",
+  "Hareket alarmı üreten pozitif oturum": "4/4",
+  "Pencere-seviyesi ROC-AUC (hareket değeri, oturum etiketleri)": "0.8145"
+ },
+ "sweep": [
+  {
+   "scale": 0.6,
+   "negWindowRate": 0.4633,
+   "posWindowRate": 0.8123
+  },
+  {
+   "scale": 0.8,
+   "negWindowRate": 0.0704,
+   "posWindowRate": 0.7126
+  },
+  {
+   "scale": 1.0,
+   "negWindowRate": 0.0635,
+   "posWindowRate": 0.6603
+  },
+  {
+   "scale": 1.2,
+   "negWindowRate": 0.0633,
+   "posWindowRate": 0.6095
+  },
+  {
+   "scale": 1.5,
+   "negWindowRate": 0.0628,
+   "posWindowRate": 0.5409
+  },
+  {
+   "scale": 2.0,
+   "negWindowRate": 0.0604,
+   "posWindowRate": 0.4495
+  },
+  {
+   "scale": 3.0,
+   "negWindowRate": 0.0581,
+   "posWindowRate": 0.2474
+  }
+ ]
+}

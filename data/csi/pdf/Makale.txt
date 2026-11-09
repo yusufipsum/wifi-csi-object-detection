@@ -1,0 +1,1542 @@
+
+
+--- PAGE 1 ---
+echT PressScience
+Doi:10.32604/cmc.2025.071047
+REVIEW
+DeepLearning-EnhancedHumanSensingwithChannelStateInformation:A
+Survey
+BingleiYue, AiliJiang, ChunYang, JunweiLei, HengLiu andYinZhang *
+School of Information and Communication Engineering, University of Electronic Science and Technology of China, Chengdu,
+611731,China
+*CorrespondingAuthor:YinZhang.Email:yin.zhang.cn@ieee.org
+Received:30July2025;Accepted:29September2025;Published:10November2025
+ABSTRACT: With the growing advancement of wireless communication technologies, WiFi-based human sensing
+hasgainedincreasingattentionasanon-intrusiveanddevice-freesolution.Amongtheavailablesignaltypes,Channel
+State Information (CSI) offers fine-grained temporal, frequency, and spatial insights into multipath propagation,
+making it a crucial data source for human-centric sensing. Recently, the integration of deep learning has significantly
+improvedtherobustnessandautomationoffeatureextractionfromCSIincomplexenvironments.Thispaperprovides
+a comprehensive review of deep learning-enhanced human sensing based on CSI. We first outline mainstream CSI
+acquisition tools and their hardware specifications, then provide a detailed discussion of preprocessing methods
+suchasdenoising,time–frequencytransformation,datasegmentation,andaugmentation.Subsequently,wecategorize
+deep learning approachesaccordingto sensing tasks—namelydetection,localization,and recognition—andhighlight
+representativemodelsacrossapplicationscenarios.Finally,weexaminekeychallengesincludingdomaingeneralization,
+multi-user interference, and limited data availability, and we propose future research directions involving lightweight
+modeldeployment,multimodaldatafusion,andsemantic-levelsensing.
+KEYWORDS:ChannelStateInformation(CSI);humansensing;humanactivityrecognition;deeplearning
+1I n t r o d u c t i o n
+Driven by rapid developments in wireless communication technologies, WiFi has evolved from a
+medium for network access into a versatile platform for human sensing applications [1,2]. Compared
+to traditional sensing modalities such as cameras and infrared sensors, WiFi offers several compelling
+advantages,includingwidecoverage,lowpowerconsumption,andminimaldeploymentcost.Thesefeatures
+position WiFi as a promising foundation for large-scale, contactless sensing systems [3,4]. Consequently,
+its application scope has expanded beyond connectivity to encompass a wide range of sensing tasks such
+as human detection [5–7], indoor localization [8,9], and posture recognition [10–12], transformingit intoa
+practicaltoolforpassivehumanbehavioranalysis[ 2].
+At the core of WiFi-based sensing lies Channel State Information (CSI), a physical-layer metric that
+characterizestheimpactofmultipathpropagation,fading,andreflectiononwirelesssignaltransmission[ 13].
+Unlike the coarse-grained Received Signal Strength Indicator (RSSI), CSI captures detailed amplitude and
+phasevariationsacrosssubcarriers.Forinstance,withina20MHzbandwidth,CSIcanrecordthefrequency
+response of up to 56 subcarriers [14]. Importantly, CSI is highly sensitive to even minor human motions,
+enablingthedetectionofsubtleactivitiessuchasbreathingandhandgestures[ 2,15].
+Copyright©2025TheAuthors. PublishedbyTechSciencePress.
+This work is licensed under a Creative Commons Attribution 4.0 International License, which permits
+unrestricteduse,distribution,andreproductioninan ymedium,providedtheoriginalworkisproperlycited.
+
+--- PAGE 2 ---
+2 ComputMaterContin. 2026;86(1)
+Recent advances in deep learning have further unlocked the potential of CSI for human sensing [16].
+Traditional methods often rely on handcrafted features (e.g., energy spectra, Doppler shifts), but these
+features often fail to generalize across dynamic environments. In contrast, deep learning models can
+autonomouslylearnspatio-temporal-frequencyrepresentationsfromrawCSIdata,enhancingbothaccuracy
+and adaptability [17–20]. For example, Convolutional Neural Network (CNN) are effective in extracting
+spatial patterns across antennas [21,22], while Recurrent Neural Network (RNN), particularly Long Short-
+TermMemory(LSTM)models,areadeptatmodelingtemporaldependencieswithinCSIsequences[ 23,24].
+These architectures demonstrate resilience to environmental changes such as furniture rearrangement
+and multipath interference. Moreover, these models are scalable and support deployment across diverse
+application scenarios [15].
+Asillustratedin Fig.1,atypicaldeeplearning-enhancedhumansensingpipelinecomprisesfourstages:
+CSI data acquisition, preprocessing, algorithm design, and sensing analysis. Each stage plays a critical role
+indeterminingsystemperformance:
+Figure1: Workflowofdeeplearning-enhancedhumansensingwithCSI
+• Data acquisition: Collecting raw CSI signals using tools such as the Intel 5300 NIC or ESP32-
+basedplatforms.
+• Preprocessing:Denoising, calibrating, and transforming CSI into structured inputs suitable for learn-
+ingmodels.
+• Algorithm design:Employing deep learning architectures to extract meaningful features for target
+sensingtasks.
+• Sensinganalysis: Generatingapplication-specificoutputssuchaspresencedetection(whetheraperson
+ispresent),localization(wherethepersonis),andactivityrecognition(whatthepersonisdoing).
+
+--- PAGE 3 ---
+ComputMaterContin. 2026;86(1) 3
+F o l l o w i n gt h i sf r a m e w o r k ,t h i sp a p e rs y s t e m a t i c a l l yr e v i e w sr e c e n ta d v a n c e m e n t si nd e e pl e a r n i n g -
+enhancedhumansensingusingCSI.Themaincontributionsareasfollows:
+• We present a structured and comprehensive overview of the CSI-based sensing pipeline, from data
+collectiontotask-specificanalysis.
+• We categorize and summarize representative deep learning methods according to sensing granularity:
+detection,localization,andrecognition.
+• We identify key technical challenges and outline promising research directions, including lightweight
+inferencemodels,multimodaldatafusion,andsemantic-levelunderstanding.
+Theremainderofthispaperisorganizedasfollows: Section2 introducescommonCSIdataacquisition
+tools;Section3 details preprocessing techniques;Section4 discusses deep learning-based modeling strate-
+gies; Section5 categorizes existing methods by sensing tasks;Section6 highlights current challenges and
+future research opportunities; andSection7 concludesthepaper.
+2 DataCollection
+In deep learning-based human sensing systems, the quality of CSI acquisition plays a pivotal role in
+determining the overall performance of downstream models. Despite growing academic and industrial
+interest in WiFi-based human sensing, several practical challenges persist. These include the limited CSI
+accessibility from Commercial Off-The-Shelf (COTS) devices and the trade-off between measurement
+accuracyanddeploymentscalability.Assuch,selectingappropriateCSIextractiontoolsisacriticalfirststep
+inbuildingreliablesensingsystems.
+This section provides a systematic review of commonly used CSI acquisition tools, highlighting their
+hardware configurations, signal resolution, and application scenarios.Table 1summarizes key specifica-
+tions such as frequency bands, bandwidths, spatial stream support, subcarrier resolution, and platform
+compatibility.
+Table 1:FeatureofdifferentCSIextractiontools,includingfrequencyband(F.B.),bandwidth(BW),numberofspatial
+streams (NSS), number of receive chains (NRX), number of subcarriers (NSC), B.H.=Based on Hardware, N.L.=no
+limit)
+Tools Open
+source
+F.B. BW NSS ×
+NRX
+NSC Hardware Device Res.
+Linux
+802.11nCSI
+tool
+No 2.4/5GHz 20/40
+MHz
+3 ×35 6 ( 2 0 M H z )
+114(40MHz)
+Intel 5300NIC PC 8 bit(i)
+Nexmon
+CSI
+extractor
+Yes 2.4/5GHz 20/40
+MHz
+4 ×45 6 ( 2 0 M H z )
+114(40MHz)
+242 (80 MHz)
+Broadcom/Cypress
+WiFi chip
+PC+Router 12bit(f)
+Yes 2.4/5GHz 20/40
+MHz
+1×15 6 ( 2 0 M H z )
+114(40MHz)
+242 (80 MHz)
+Broadcom/Cypress
+WiFi chip
+Phone+IoT 14 bit(i)
+10bit(f)
+Atheros
+CSItool
+Yes 2.4/5GHz 20/40
+MHz
+3 ×35 6 ( 2 0 M H z )
+114(40MHz)
+Atheros802.11n
+WiFi NIC
+PC+Router
+or PC+PC
+10bit(i)
+ESP32CSI
+tool
+Yes 2.4 GHz 20/40
+MHz
+1×16 4 E S P 3 2N . L . 8 b i t ( i )
+FeitCSI Yes 2.4GHz 20/40/80/160
+MHz
+3 ×36 4 ( 2 0 M H z )
+128(40MHz)
+256(80MHz)
+512(160MHz)
+Intel NIC
+AX200,AX210
+PC 16bit(i)
+PICOScenes Yes B.H. B.H. B.H. B.H. COTS/SDR B.H. B.H.
+
+--- PAGE 4 ---
+4 ComputMaterContin. 2026;86(1)
+CSIextractiontoolscanbebroadlycategorizedintothreetypesbasedontheirunderlyingplatformand
+designphilosophy:
+• Network Interface Card (NIC) driver-based tools:N e t w o r kI n t e r f a c eC a r d( N I C )d r i v e r - b a s e dt o o l s :
+Tools such as the Intel 5300 CSI Tool [25] and the Atheros CSI Tool [26] extract CSI via modified
+NIC drivers and are widely used in academic research. They provide stable sampling rates and well-
+documented data formats but are limited by hardware compatibility and poor scalability.
+• Embeddedplatform-basedtools: Embeddedplatform-basedtools:ExamplesincludetheNexmonCSI
+Extractor [27]a n dt h eE S P 3 2C S IT o o l[28], which are designed for lightweight deployment on mobile
+or edge devices. These tools provide enhanced flexibility and cost-efficiency, although they generally
+requirefirmwaremodificationsandofferlowersamplingprecision.
+• Next-generation and high-resolution tools:Next-generation and high-resolution tools: Tools such as
+FeitCSI[29]andPicoScenes[ 30]aredevelopedtosupporthigh-resolution,wide-bandwidthCSIacquisi-
+tioncompatiblewithmodernWiFistandards.Theyenableadvancedapplicationssuchasmicro-motion
+analysisandWiFiimagingbutmaydemandhigherhardwareandcomputationalresources.
+2.1 Linux802.11nCSITool
+Developedforresearchuse,thistoolsupportsCSIextractionundertheIEEE802.11nstandard,offering
+up to 3×3 Multiple-Input Multiple-Output (MIMO) configurations and 56 or 114 subcarriers at 20 and
+40 MHz, respectively. CSI values are encoded as 8-bit signed integers. Despite its ease of use and stable
+performance,relianceontheIntel5300NICandkernelmodificationslimititsflexibility.
+2.2 NexmonCSIExtractorTool
+Based on Broadcom/Cypress chipsets, this tool supports bandwidths up to 80 MHz and MIMO
+configurations up to 4×4. It runs on platforms such as Raspberry Pi and Android smartphones, providing
+12-bit floating-point precision. While its high adaptability makes it suitable for mobile sensing scenarios,
+firmwaredependencyandcomplexsetupproceduresremainchallenges.
+2.3 AtherosCSITool
+Utilizingtheath9kdriver,thistoolextractsCSIonAtherosNICswithoutrequiringfirmwaremodifica-
+tions. It supports up to 3×3MIMOand20/40MHzbandwidths.Itsmainadvantageliesinitsopen-source
+accessibility,butitsuffersfromlimiteddocumentationandcomplexdriveradaptationprocesses.
+2.4 ESP32CSITool
+Designed for edge applications, this tool enables low-cost CSI collection directly from ESP32 chips.
+S u p p o r t i n gu pt o6 4s u b c a r r i e r sa t2 0 / 4 0M H z ,i tp r ovides real-time data transmission via serial or
+SD card interfaces. Its primary strengths are low power consumption and ease of deployment in smart
+home environments. However, limited processing capability and sampling rates constrain its application in
+high-resolutionsensingtasks.
+2.5 FeitCSI
+As the first open-source tool supporting Intel AX200/AX210 NICs, FeitCSI operates across 2.4, 5, and
+6 GHz bands, with bandwidths up to 160 MHz. It captures up to 512 subcarriers with 16-bit signed integer
+precision, offering high sampling fidelity. This tool is especially suited for tasks requiring fine temporal or
+spectralresolution,suchasrespirationmonitoringorgesturerecognition.
+
+--- PAGE 5 ---
+ComputMaterContin. 2026;86(1) 5
+2.6 PicoScenes
+PicoScenes is a flexible CSI acquisition platform supporting both commercial NICs and software-
+defined radios (e.g., USRP, HackRF). It offers advanced functionalities such as synchronized multi-device
+acquisition,dynamicpacketinjection,andreal-timeCSIvisualization.Itsplugin-basedarchitectureenables
+customizationforawiderangeofIntegratedSensingandCommunication(ISAC)applications.
+3 Preprocessing
+Raw CSI data is often subject to various distortions and noise arising from environmental dynamics,
+hardwarelimitations,andmeasurementinconsistencies.Theseincludeamplitudefluctuations,phaseoffsets,
+andtemporalmisalignments,allofwhichcanseverely degradetheperformance ofdeeplearningmodelsif
+not addressed. The primary objective of preprocessing is therefore to transform raw CSI into a structured
+andnoise-reducedformatthatpreservestask-relevantinformationwhileenhancingfeaturediscriminability.
+Th i ss e c t i o nc a t e g o r i z e sa n dd e s c r i b e sm a i n s t r e a mpreprocessing techniques, including signal denois-
+ing,time–frequencytransformation,dimensionalityreduction,segmentation,anddataaugmentation.
+3.1 SignalDenoising
+Denoising is a critical step in mitigating noise introduced by channel variability [31], hardware arti-
+facts [32], and environmental interference. Common sources of distortion [26] include Carrier Frequency
+Offset(CFO),SamplingTimeOffset(STO),andPacketDetectionDelay(PDD),whichmanifestasrandom
+fluctuationsinamplitudeandphase.Severalapproacheshavebeenproposedtosuppresssuchnoise:
+CSI ratio-based denoising[33]: This technique leverages the noise correlation between antennas on
+the same receiver. By computing the amplitude ratio between CSI streams from different antennas, high-
+frequency noise components and phase biases can be effectively cancelled. This approach has been widely
+adoptedintaskssuchasfalldetection[ 32]andrespirationmonitoring[ 34],whereitenhancesthesignal-to-
+noiseratiobyisolatingdynamicmotion-inducedvariationsfromstaticmultipathreflections.
+Discrete Wavelet Transform (DWT)[35]: DWT decomposes CSI signals into multiple frequency
+componentsusingwaveletbasisfunctions[ 36],enablinglocalizedthresholdingofhigh-frequencynoise[ 32]
+while preserving key temporal and spectral structures. This method is particularly effective in detecting
+abruptchangescausedbyevents[ 32,36,37]suchasfallsorsuddengestures,asitmaintainssharptransitions
+inthesignalwhileremovinglow-levelbackgroundinterference.
+Deeplearning-baseddenoising: Recentstudieshaveemployedend-to-enddenoisingnetworks—such
+as autoencoders or residual CNN [38]—to learn the distribution of noise patterns directly from CSI data.
+Forinstance,residualautoencoders[ 39]havedemonstratedeffectivenessinstabilizingCSIphasesequences
+andconcurrentlyextractingdiscriminativefeaturesduringdenoising,makingthemsuitableforfrequency-
+divisionduplexingsystems[ 40].
+3.2 SignalTransformation
+Human activities often induce non-stationary frequency components in CSI streams due to micro-
+Dopplereffects.Tocapturethesedynamicvariations[ 15],time–frequencyanalysistechniquesareemployed:
+Fourier-based methods:Fast Fourier Transform (FFT) is used to derive the power spectral density
+(PSD) of CSI sequences, which is effective for extracting low-frequency physiological signals [41]s u c ha s
+respirationorheartrate.However,traditionalFFTlosestemporallocalization.Toaddressthislimitation,the
+Short-Time Fourier Transform (STFT) applies a sliding window to balance time and frequency resolution,
+therebygeneratingspectrogramsthatrevealtemporalactivitypatterns[ 28,36,37,42].
+
+--- PAGE 6 ---
+6 ComputMaterContin. 2026;86(1)
+Wavelet-based methods:Unlike STFT, which uses a fixed time–frequency resolution, wavelet trans-
+forms provide adaptive resolution based on signal frequency [43]. Discrete Wavelet Transform (DWT)
+enablesmulti-resolutiondecompositionandsupportshierarchicalfeatureextraction[ 44],whileContinuous
+Wavelet Transform (CWT) generates time-frequency matrices [45] that visualize frequency content as
+temporallyvaryingpatterns—particularlyusefulforfastmotionssuchashandgestures[ 32,39,46,47].
+3.3 DimensionalityReduction
+CSI data contains strong inter-subcarrier correlations, especially between adjacent subcarriers [48].
+Directly using high-dimensional raw data introduces redundancy and computational overhead. Principal
+ComponentAnalysis(PCA)[ 49]projectsCSIdataontoorthogonalcomponentsthatcapturethemaximum
+variance. In practice, the first few components are often sufficient to retain over 90% of the signal’s
+energy, offering a compact and noise-resistant representation for motion-related features [37,47,50–52].
+Additional methods include Local Linear Embedding (LLE) [53], Multidimensional Scaling (MDS) [54],
+andsubcarrierselectionbasedoncorrelationthresholds[ 32].Thesetechniquesareappliedbasedonspecific
+sensing objectives and data characteristics, with the shared goal of compressing input while minimizing
+informationloss.
+3.4 DataSegmentation
+BecauseCSIdataiscollectedascontinuousstreams,identifyingmeaningfulactionsegmentsisessential
+for accurate recognition. The choice of segmentation strategy [15]significantlyaffectstemporalconsistency
+andlabelalignment:
+Fixed window segmentation:This method divides the CSI stream into non-overlapping segments of
+uniform length. It is simple and efficient but assumes that actions are of consistent duration [55]. When
+actionboundariesfallwithinawindow,segmentationerrorsmayoccuranddegrademodelperformance.
+Sliding window segmentation:Overlapping windows with adjustable stride allow better alignment
+withvariable-lengthactions[ 56].Thisapproachalsoincreasesthenumberoftrainingsamplesandcaptures
+contextualtransitionsbetweenmotionstates.Adaptiveversionsdetectactivityboundariesbasedonstatisti-
+calchangesinCSIvariance,offeringimprovedtemporallocalizationinscenariossuchasfalldetection[ 57]
+orcontinuousactivitymonitoring[ 58,59].
+3.5 DataAugmentation
+CSI datasets are often limited by high acquisition costs [36] and class imbalance [60], particularly
+f o rr a r eo rs h o r t - d u r a t i o na c t i v i t i e s[61,62] (e.g., falls, gestures). Data augmentation [63]e n h a n c e sm o d e l
+robustnessandgeneralizationbyexpandingtrainingsamplesthroughsyntheticortransformedinstances:
+• Traditionalaugmentation:Thesemethodsincludesequencerecombination,signalinterpolation,Gaus-
+siannoiseinjection,andlabelmixing[ 63] (e.g., mixup and cutmix). They are computationally efficient
+andsuitableforedgedeployment[ 64].However,theygenerateonlylimitedsamplediversity[ 36].
+• Intelligent generation schemes[65]: These schemes leverage the representational power of neural
+networks to learn the probability distribution of original data and generate synthetic data highly
+similar to real samples [61]. Generative models such as Variational Autoencoder (VAE) [66]a n d
+GenerativeAdversarialNetwork(GAN)areusedtolearntheunderlyingdatadistributionandgenerate
+realistic CSI samples. For example, domain-adaptive GAN can synthesize cross-environment data,
+whileautoencodersreconstructvirtualsampleswithdiversebutconsistentpatterns.Thesemethodsare
+particularlyvaluableforfew-shotlearningandcross-domaingeneralization[ 9,67,68].
+
+--- PAGE 7 ---
+ComputMaterContin. 2026;86(1) 7
+4 AlgorithmDesign
+The design of deep learning models is central to the effectiveness of CSI-based human sensing
+systems. Channel State Information inherently contains rich spatio-temporal and spectral characteristics,
+typicallyrepresentedasathree-dimensionaltensorwit hdimensionscorrespondingtotime,subcarriers,and
+antennas. A well-designed model must therefore capture temporal dynamics, frequency-specific features,
+andspatialcorrelationstoextractmeaningfulpatternsfordownstreamsensingtasks.
+This section presents a structured overview of deep learning architectures for human sensing, cate-
+gorized by model types, followed by a discussion of their suitability for specific tasks such as detection,
+localization,andrecognition.
+4.1 CommonDeepLearningNeuralNetworkArchitecture
+Fully Connected Network (FCN):The fully connected network (such as the multi-layer perceptron
+MLP) is one of the earliest structures applied to CSI perception. This type of model flattens the CSI
+sequence into a one-dimensional vector for input, and learns the high-level mapping between signals and
+behaviors [69,70]. For example, For example, Fang et al. combined CSI amplitude and phase into complex
+features and realized human presence detection using an MLP [5]. However, such structures ignore the
+spatialandfrequencystructuresofCSI—flatteningthr ee-dimensionaldataintoone-dimensionalvectorswill
+lose the frequency correlation between subcarriers and the spatial correlation between antennas, resulting
+in poor generalization ability in complex environments, which is mainly used for small-scale scenario
+verification[10,63,71].
+Convolutional Neural Network (CNN):CNN extracts local frequency patterns and spatial features
+in CSI through the local receptive field and weight sharing mechanisms, which is particularly suitable for
+the case where the input is a CSI spectrogram (such as STFT/CWT heatmap), and has shown outstanding
+performanceinhumanactivityrecognition[ 10,32].Forexample,theIDSDLsystemdesignedbyHuetal.uses
+CNN to learn the multipath fuzzy components of CSI phase, achieving high-precision human detection in
+Non-Line-of-Sight(NLOS)environments[ 72];Liuetal.adoptaparallelCNNarchitecturetosimultaneously
+c a p t u r et h et e m p o r a l ,f r e q u e n c y ,a n ds p a t i a ld i m e nsional information of CSI, improving the robustness
+of real-time occupancy detection [6]. The limitation of CNN lies in its weak ability to handle long-term
+temporal dependencies, which requires further optimizationin combination with temporal networks.
+Recurrent Neural Network (RNN):RNN processes the temporal dynamics of CSI through hidden
+state memory mechanisms, enabling the extraction of temporal dependency features from continuous
+CSI data. Typical examples include the Bi-LSTM, which captures action information from both past and
+future sequences, and the Gated Recurrent Unit (GRU), which reduces computational complexity while
+maintaining modeling capability for real-time applications. Compared with CNN, RNN demonstrates
+superior performance in tasks such as fall detection and trajectory tracking [31,71]. For instance, Chu et al.
+used an LSTM to extract temporal features from CSI phase differences and combined it with a CNN to
+constructthespatio-temporalnetworkC-MuRP,achievingmulti-roomhumanpresencedetection[ 73];Ding
+et al. designed a deep recurrent network to process CSI time series, enhancing model adaptability in cross-
+scenarioactivityrecognition[ 71].However,RNNsuffersfromhighcomputationalcomplexity,necessitating
+carefulselectionofsequencelengthtobalanceaccuracyandefficiency.
+Hybrid Architectures:To model spatial and temporal features simultaneously, researchers have pro-
+posedhybridstructurescombineCNNwithRNNormulti-branchnetworks.Shengetal.proposedamodel
+combiningCNNwithBidirectionalLongShort-TermMemory(BiLSTM),wherethefront-endCNNextracts
+frequencyimagefeaturesandtheback-endLSTMcapturestemporaldependencies,improvingclassification
+
+--- PAGE 8 ---
+8 ComputMaterContin. 2026;86(1)
+accuracy in complex activity recognition [74]. Li et al. designed the Two-stream Convolution-Enhanced
+Transformer (THAT) model. It processes channel and temporal features through a two-stream structure,
+incorporatesmulti-scaleconvolutionstoexpandthereceptivefield,andachieveshigh-precisionhumanpose
+recognition [11].
+Transformer-BasedModels: Inspired bynaturallanguageprocessing,Transformer architectureshave
+been introduced to address the limitations of CNN and RNN in capturing long-range dependencies. The
+self-attentionmechanismdynamicallyweightsfeaturesacrosstimestepsandsubcarriers,enablingthemodel
+tofocusonsubtleyetcriticalmotioncues.Themulti-headattentionstructureissuitableformodelingmulti-
+channelandmulti-bandCSIstructures.Transformershowssignificantpotentialincross-domainmigration,
+few-shotrecognition,andotherfields,thoughitstrainingcostisrelativelyhigh.
+Table 2summarizes the applicability of different neural network architectures to human perception
+tasks. This table helps guide architecture selection according to task types (such as presence detection, fall
+recognition,ordomainadaptation).
+Table 2:Comparativesuitabilityofneuralnetworkarchitecturesforhumansensing
+Network Advantages Applicabletasks
+FCN Simpleimplementation,fast
+inference
+Presencedetection,static
+postureanalysis
+CNN Strongspatial/frequency
+modeling
+Gesturerecognition,activity
+classification
+RNN Excellenttemporalmodeling Falldetection,motion
+tracking
+Hybrid structure Joint
+spatial-frequency-temporal
+modeling
+Continuousaction
+recognition,poseestimation
+Transformer Long-rangedependency
+capture,domaintransfer
+Cross-environment
+adaptation,semantictasks
+4.2 LearningStrategiesandTrainingMethods
+The choice of learning strategy significantly influences the adaptability, robustness, and data efficiency
+of CSI-based human sensing systems. Depending on the availability of labeled data, the complexity of
+sensing environments, and the desired generalization performance, researchers have explored various
+paradigmsincludingsupervisedlearning,unsupervisedandself-supervisedlearning,transferlearning,and
+meta-learning:
+Supervised Learning: Supervised learning guides models to learn the mapping between CSI and
+actionlabelsusingannotateddata,andiscurrentlythemainstreamparadigmforHumanSensing.Itsmain
+advantage lies in the ability to learn complex patterns from large volumes of labeled data—for example,
+distinguishing subtle differences between falls and normal activities. The CSITime, for instance, achieves
+fine-grained classification of human activities through supervised learning [63]. However, this approach
+relies heavily on high-quality annotated datasets. In localization tasks, for example, fingerprinting requires
+extensive site surveys, resulting in significant costs [75]. Moreover, models trained in this way are prone to
+overfittingtospecificenvironments,leadingtoreducedgeneralizationperformanceinnewscenarios[ 5].To
+
+--- PAGE 9 ---
+ComputMaterContin. 2026;86(1) 9
+addressthisissue,researchershaveintroduceddomainadaptationtechniques.Forexample,theD-Fisystem
+employs Domain-Adversarial Neural Networks (DANN)to minimize distribution discrepancies between
+sourceandtargetdomains,therebyenhancingtheenvironmentaltransferabilityoflocalizationmodels[ 76].
+Unsupervised and Self-Supervised Learning:Unsupervised learning eliminates the need for labeled
+data by uncovering the intrinsic structure of CSI, enabling feature clustering in data-scarce scenarios.
+For example, the WiSOM system proposed by Salman et al. employs a Self-Organizing Map (SOM)
+network to perform unsupervised clustering of CSI data, thereby achieving occupancy detection in smart
+buildings [77]. Similarly, the MaskFi model designed by Yang et al. masks parts of the CSI features to force
+the network to learn cross-modal (WiFi and vision) representations, thus improving the generalization
+of activity recognition under unlabeled conditions [78]. I-Sample [64] is a generation framework based
+on intermediate samples that addresses unsupervised domain adaptation for WiFi-based human activity
+recognition (HAR).Self-supervised learning, on the other hand, leverages pretext tasks—such as sequence
+reconstructionorfeaturecontrast—toautomaticallylearneffectiverepresentationsfromunlabeleddata.For
+instance,theAutoFisystememploysageometricstructurelosstoguidetheself-supervisedmodule,thereby
+reducingdependenceonmanualannotations[ 79].
+Transfer Learning:Transfer learning addresses cross-environment challenges by transferring knowl-
+edgefromasourcedomain(e.g.,alabeledlaboratorysetting)toatargetdomain(e.g.,anewlydeployedhome
+environment). For instance, the CrossCount system proposed by Khan et al. leverages a pre-trained model
+for crowd counting in target rooms, requiring only minimal new data for fine-tuning [80]. Similarly, Xiao
+et al. developed a transfer learning framework based on Gram Angular Field (GASF) images, enabling the
+migration of CSI-based indoor localization models from the source environment tothe target environment
+and thereby reducing the need for redundant retraining [81]. Common transfer strategies include pre-
+trainingandfine-tuning,aswellasfeaturetransfer.Thekeyliesinidentifyingdomain-invariantfeaturesthat
+canbesharedacrossdomains,suchasphasedifferencepatternsinCSIinducedbyhumanactivities.
+Meta-Learning: Meta-learning endows models with the ability to “learn how to learn,” making them
+particularly effective in few-shot scenarios. The DASECount model combines meta-learning with few-shot
+learning (FSL) to achieve sample-efficient crowd counting across different domains [58]. Similarly, Zhang
+etal.proposedCSI-GDAM,whichconstructsanactivityassociationgraphusinggraphneuralnetworksand
+employsmeta-learningtooptimizegraphconvolutionparameters,enablingtherecognitionofnewactivity
+categories with only a few samples [82]. In meta-learning, the fundamental unit is the task; by learning
+generalizablestrategiesacrossmultiplemeta-trainingt asks,themodelcanrapidlyadapttometa-testingtasks
+such as activity recognition in new environments. For example, the AFSL-HAR model designed by Wang
+etal.integratesafeaturegenerationnetwork(FWGAN)toenhancetherobustnessofactivityrecognitionin
+few-shotsettings[ 83].
+5 Analysis
+The analysis of human sensing tasks should be conducted based on hierarchical output objectives—
+ranging from binary detection determining human presence to spatial coordinate localization and further
+to posture recognition identifying specific actions, forming a perception system that progresses from
+macroscopic to microscopic levels. Following this logical framework, this section systematically examines
+the classification of WiFi sensing tasks enhanced by deep learning: first, it dissects fundamental sensing
+tasks such as human presence detection and crowd counting, exploring how to capture the existential
+characteristics of human activities through variations in CSI signals; then, it delves into localization and
+tracking tasks, analyzing how deep learning overcomes the accuracy limitations of traditional wireless
+
+--- PAGE 10 ---
+10 ComputMaterContin. 2026;86(1)
+positioningandachievesdynamictrajectorymodeling;finally,itfocusesonactionandposturerecognition
+tasks,revealingthefeaturelearningmechanismsofmodelsforhumanmotionpatternsatvaryingscales.
+5.1 Detection
+Thedetectiontaskfocusesonthepresencejudgmentofhumanbodiesortheestimationofthenumber
+ofpeoplewithinthesensingarea,anditscoreistocapturethechanneldisturbancescausedbyhumanbodies
+through the changes in CSI signals. According to the task granularity, it can be divided intotwo categories:
+human presence detection (such as intrusion recognition [58,73,83]a n dh e a l t hm o n i t o r i n g[6]) and crowd
+counting[84](suchastrafficstatisticsinpublicplaces),bothofwhichrelyontheabilityofdeeplearningto
+recognize abnormal patterns of CSI.
+5.1.1HumanDetection
+Human presence detection differentiates between “occupied” and “unoccupied” states by analyzing
+dynamicchangesinCSIamplitudeorphasedifferences.Fangetal.firstappliedanMLPtothistask,combin-
+ing CSI amplitude and phase into complex features to classify human presence in office environments [5].
+However, this method is significantly affected by multipath interference in through-wall scenarios. Yuan
+et al.’s through-wall detection system combines the smoothed MUSIC algorithm to estimate signal Time
+of Flight (ToF), enabling the identification of stationary humans behind walls via MLP [85]. The TWMD
+algorithm leverages temporal and subcarrier correlations in CSI to extract multi-dimensional features,
+enablingdetectio no fbo thsta tio naryandmo vingtargetseventhr o ughglasso rb rickwalls[86].
+Given the multi-dimensional nature of CSI, CNN have become the mainstream approach: The IDSDL
+systemdecomposesCSIphasecomponentsandappliesaCNNtolearnmultipathfeatures,therebyimproving
+detectionaccuracyinNLOSscenarios[ 72].Liuetal.adoptedaparallelCNNarchitecturetosimultaneously
+capture temporal, frequency, and spatial information from CSI, providing a real-time occupancy detection
+solutionforlibrariesandapartments[ 6].Chuetal.[ 73]proposedC-MuRP,amulti-roomdetectionsystem
+integrating CNN and GRU, which enhances accuracy through spatio-temporal features and voting mecha-
+nisms.Toaddresstheannotationcostofsupervisedlearning,Wangetal.developedtheCAUTIONsystem,
+which uses few-shot learning to extract gait features from limited CSI samples and combines intrusion
+thresholds for robust identity recognition and intrusion detection [7]. Additionally, Zhang et al. [87]
+introduced an unsupervised detection method based on Self-Organizing Map (SOM) neural networks to
+tackle data labeling challenges and achieve high accuracy in intrusion detection.Table 3summarizes key
+deep learning-based approaches for WiFi human detection. These methods vary in model architecture and
+inputformat,withnotabledifferencesinenvironmentalrobustnessandgeneralizationability.
+Table 3:AsurveyoftheexistingWiFihumandetectionbasedondeeplearning
+Method Inputformat Network Corecontribution Limitation
+[5] Amplitudenormalization,
+phasecorrection
+MLP Robustdetection
+withlimitedsamples
+Poor
+generalization
+[85] Phasecorrection MLP Through-wall
+detection
+(stationary)
+Fewexperiments,
+poor
+generalization
+TWMD[86] Denoising,phasecorrection MLP Robustthrough-wall
+detection
+Sensitivetoclutter
+(Continued)
+
+--- PAGE 11 ---
+ComputMaterContin. 2026;86(1) 11
+Table 3 (continued)
+Method Inputformat Network Corecontribution Limitation
+IDSDL[72]P h a s e c o r r e c t i o n , o u t l i e r
+removal
+CNN Accurate NLOS path
+detectionn
+Requiresretraining
+C-
+MuRP [73]
+Amplitudenormalization CNN,
+GRU
+Multi-roompresence
+detection
+LOS-only data
+[6] 2DDFT,phaseunwrapping CNN Goodenvironmental
+robustness
+High false alarm
+on minor motion
+CAUTION[7] RawCSI CNN Robustwithfew
+samples
+Poor
+generalization
+[87]S O M R a w
+CSI
+Label-freedetections Poor
+generalization
+5.1.2CrowdCounting
+Crowd counting, as an advanced task of presence detection, requires estimating the number of people
+by analyzing the collective disturbances in CSI signals, facing dual challenges of multi-user signal aliasing
+anddynamicenvironmentalchanges.Inearlystudies,Zhouetal.[ 88]extractedthepercentageofnon-zero
+elements in CSI subcarriers (PEM) as features and used MLP to achieve crowd counting for groups of over
+ten people. The TWCC system integrates four-dimensional features including time domain and subcarrier
+domain, completing crowd statistics in through-wall scenarios via neural networks, but requires manual
+adjustmentofthresholdparameters[ 89].
+CNN schemes based on time-frequency analysis demonstrate higher accuracy: Shi et al. generated
+CWT images from CSI through continuous wavelet transform and input them into CNN to predict the
+number of individuals in elevator scenarios [90]. Yang et al.’s Door-Monitor system combines STFT with
+CNN to identify the sequence of multiple people passing through doors via spectrogram features [91]. The
+WiFlowCountsystemproposedbyZhouetal.[ 92]estimatesthenumberofmovingindividualsbyoptimally
+rotatingandsegmentingDopplershiftspectrograms,butfailstodetectstationaryones.TheWisualmethod
+by Ma et al. [84] innovatively integrates spatial (Angle of Arrival (AoA)), ToF, and Frequency of Change
+(FoC)domainfeaturesofCSIreflectionpathstoconstructaJointMulti-FeatureParameter(JMFP)spectral
+matrix, achieving crowd density estimation and path differentiation through 3-D CNN. It also completes
+Wi-Fi imagingbased on 2-D MUSIC algorithm to visualizeindoor personnel distribution.
+In recent years, end-to-end and multimodal models have become research hotspots. The CM-NET
+m o d e lp r o p o s e db yG u oe ta l .[93] fuses video and CSI data, leveraging Transformer and knowledge
+distillation techniques. It uses soft labels generated by visual networks to guide training, effectively com-
+pensating for the counting performance fluctuations caused by personnel position changes in single CSI.
+In terms of cross-domain adaptability, the CrossCount system by Khan and Ho [80] achieves target-
+domain adaptation of source environment pre-trained models through transfer learning. DASECount by
+Houetal.combinesfew-shotlearningwithknowledgedistillationtorealizesample-efficientcrowdcounting
+inscenariossuchasofficesandlecturehalls[ 58],providingnewideasforengineeringapplicationsincomplex
+environments.Table 4classifiesandsummarizesrecentdeeplearning-basedWiFicrowdcountingtasks.
+
+--- PAGE 12 ---
+12 ComputMaterContin. 2026;86(1)
+Table 4:AsurveyoftheexistingWiFicrowdcountingbasedondeeplearning
+Method Inputformat Network Corecontribution Limitation
+[88]P E M M L P S c a l a b l e c o u n t i n g o f
+morethantenpeople
+Requiresretrainingin
+unseenenvironments
+TWCC[89] CSIphase
+difference
+MLP Enablesthrough-wall
+crowdcounting
+Thresholdsneedmanual
+tuningfornewscenarios
+[90] CWTimage CNN Demonstratesgood
+modelgeneralization
+Limi tedtosingle-digi t
+counting
+Door-
+Monitor [91]
+CSIphase
+difference
+CNN Accurate counting of
+individualspassing
+throughdoors
+Performance drops in
+reverse-direction
+movement
+WiFlowCount[92]D o p p l e r
+spectrogram
+CNN Supportscontinuous
+flowcountingof
+multiple targets
+Degradedaccuracywith
+staticindividuals
+Wisual [84]M u l t i - t a r g e t
+spectralmatrix
+CNN Visualizescrowd
+distributionvia
+CSI-basedheatmaps
+Performance limited by
+antennacount;
+decreasesindense
+crowds
+CM-NET[93]C S I a n d v i d e o
+data
+Transformer
+(cross-
+modal)
+Fuses multi-modal data
+toreducedatademand
+andenhancefeature
+representation
+Requiresfurther
+accuracyimprovements
+CrossCount[80] CSI frames CNN Uses cross-domain
+transfertoreducetarget
+datadependency
+Accuracy drops with
+increasingcrowdsize
+DASECount[58] CSIamplitude
+andphase
+difference
+CNN Robustcountingin
+data-scarcesettings
+Highly sensitive to
+deviceandenvironment
+variation
+5.2 Localization
+Localization aims to determine the spatial coordinates or trajectories of the human body, relying on
+thefingerprintcharacteristicsofCSIinspatialpositions—CSIamplitudeandphasedistributionsareunique
+at different locations. Deep learning breaks through the accuracy limitations of RSSI-based localization
+by learning the mapping between CSI fingerprints and positions. Localization can be divided into static
+localization[94–96]anddynamictracking[ 97,98].
+5.2.1HumanLocalization
+Deep learning-driven fingerprint localization began with the DeepFi model, which uses Restricted
+Boltzmann Machine (RBM) to learn the nonlinear relationship between CSI amplitude fingerprints and
+locations[75],albeitwithhighparametertrainingcosts.Chenetal.[ 66]proposedtheFiDosystemachieving
+
+--- PAGE 13 ---
+ComputMaterContin. 2026;86(1) 13
+sub-meter localization accuracy and addressing inconsistencies of WiFi fingerprints across users. Gönülta¸s
+et al. [99] introduced a localization model for WLAN MIMO-OFDM systems that improves accuracy
+by combining multiple Access Points (APs) without requiring precise synchronization. Li and Rao [100]
+used adaptive Deep Neural Network (DNN) to tackle temporal variations in CSI fingerprint databases,
+while Zhang et al. [9] proposed LESS, a novel adaptive fingerprint localization method with minimal site
+surveysthataddressesenvironmentalmigrationfromadomainrelationshipperspective,employingGANsto
+generatedataandenhancetransferability.Chenetal.’sConFialgorithmconvertsCSIamplitudeintoimages
+and uses CNN for sub-meter localization [101]; Wang et al.’s CiFi system estimates AoA from CSI phase to
+constructAoAimagesfedintodeepCNN,mainta iningrobustnessinmultipathenvironments[ 102].
+To address environmental dynamics, hybrid architectures and transfer learning are widely applied:
+the ResLoc system uses deep residual networks to process bimodal CSI tensors, improving localization
+accuracy in laboratory and corridor scenarios [103]; MFFALoc combines multi-feature fusion and domain
+adaptation techniques via CNN to learn cross-environment shared features [8]. Cui et al. [104]p r o p o s e da
+robustlocalizationmodelusingDeepNeuralForest(DNF),transferringlearnedknowledgefromsourceto
+target environments to solve cross-environment device-free localization. Hoang et al.’s CNN-LSTM model
+enhances historical temporal information with LSTM, improving localization stability in office environ-
+ments [105]. Table 5presents representative deep learning-based approaches for WiFi human localization.
+These works vary interms of network structures,andadaptabilitytocomplex indoor environments.
+Table 5:AsurveyoftheexistingWiFihumanlocalizationbasedondeeplearning
+Method Inputformat Network Corecontribution Limitation
+DeepFi[75] CSI amplitude RBM Eliminates manual feature
+extraction
+Poorgeneralization
+FiDo[66] CSI amplitude NN VAE-basedaugmentation
+for fingerprint stability
+Poorgeneralization
+[99] RawCSI NN Multi-APfusionenhances
+positioningaccuracy
+SensitivetoCSI
+variations
+LTLoc [100] CSIamplitude +
+phase
+DNN Tacklestemporal
+fluctuationsviacalibration
+Poorgeneralization
+LESS[9] CSIamplitude DNN,
+GAN
+Improvesdomaintransfer
+viaGANaugmentation
+Limited representation
+bysimpleDNN
+ConFi[101] CSIamplitude CNN Reducesparametersusing
+amplitudeimages
+Weakgeneralization
+withamplitudeonly
+CiFi[102] CSI phase DCNN AoAimageconstruction
+formultipathrobustness
+Weakgeneralization
+withphaseonly
+ResLoc[103] CSIamplitude +
+AoA
+CNN Residualnetwork
+improveslearningcapacity
+Hightrainingcost
+MFFALoc[8] CSIamplitude +
+phase
+DCNN Robusttoenvironmental
+variationviawavelet
+filtering
+Weak features from
+simpleDCNN
+(Continued)
+
+--- PAGE 14 ---
+14 ComputMaterContin. 2026;86(1)
+Table 5 (continued)
+Method Inputformat Network Corecontribution Limitation
+[104] RawCSI CNN,
+GAN,
+DNF
+Semi-supervisedlearning
+fordynamicenvironments
+Hightrainingcost
+CNN-
+LSTM[105]
+CSIamplitude CNN,
+LSTM
+Models temporal CSI
+correlation
+Limitedfeature
+extraction
+5.2.2MovementTracking
+Movement tracking builds on localization by recording human trajectories in real-time, requiring
+simultaneous handling of spatial coordinates and temporal dynamics. The WiLocus system uses machine
+learningtoclassifybehaviorssuchas“passingthroughdoors”and“enteringrooms,”constructingmovement
+trajectories[106];TheCRLocsystemtargetsmobileshipenvironments.Itemploysaconvolutionalrecurrent
+neural network (CRNN) to suppress noise and interference, and combines it with variational Bayesian
+algorithms to estimate multipath parameters for precise human tracking [107]. Chen et al. [108]p r o p o s e d
+a deep spatiotemporal neural network integrating RSSI and CSI data, extracting spatial features via CNN
+and temporal features via LSTM, achieving device-free target following in corridor scenarios. Currently,
+deep learning-based movement tracking research is limited, partly because traditional methods are still
+prevalent—for example, Qian et al. [109] proposed an algorithm combining AoA, ToF, and Doppler
+Frequency Shift (DFS) for joint estimation of movement trajectories without using deep neural networks;
+some neural network-based methods [110] focus on improving localization accuracy first, then obtaining
+trajectories via Bayesian filtering.Table 6categorizes and summarizes recent deep learning CSI movement
+trackingstudies.
+Table 6:AsurveyoftheexistingWiFimovementtrackingbasedondeeplearning
+Method Inputformat Network Corecontribution Limitation
+WiLocus[106] CSIamplitude +
+phase
+SVM Robusttodevicevariations
+andeasytodeploy
+Poorgeneralization
+across environments
+CRLoc[107] CSIamplitude +
+phase
+CRNN Accuratetrackingin
+mobilevesselscenarios
+usingToF-AoAmodeling
+Limitedinmulti-person
+andoccludedscenes
+[108] CSIamplitude +
+RSSI
+CNN,
+LSTM
+Improved tracking
+accuracywithamplitude
+calibration
+Requires
+wearable/device
+dependency
+5.3 Recognition
+The recognition task is one of the most complex categories in human body perception, requiring the
+model to identify specific actions or postures from CSI. According to the activity scale, it can be divided
+into large-scale actions (such as walking and falling) [50,111] and small-scale actions (such as gestures and
+breathing[112]).Thecoredifferenceliesintheamplitudeandfre quencycharacteristicsofsignaldisturbance.
+
+--- PAGE 15 ---
+ComputMaterContin. 2026;86(1) 15
+5.3.1Large-ScaleActivity
+Large-scale actions (such as sitting down and falling) cause strong disturbances to CSI, and deep
+learning mainly addresses the problems of cross-environmental generalization and few-shot learning.
+Adversarial networks and meta-learning are the mainstream solutions: The adversarial network designed
+by Jiang et al. learns CSI features independent of the environment through the game between the feature
+extractor and the domain discriminator [113]; Xiao et al.’s CsiGAN combines semi-supervised GAN and
+CycleGANtogeneratetargetdomainsamplestoenhancethegeneralizationabilityoftheclassifier[ 67].
+Meta-learning has outstanding performance in few-shot scenarios: CSI-GDAM proposed by Zhang
+et al. uses graph neural networks to construct activity correlation graphs and optimizes graph convolution
+parametersthroughmeta-learning[ 82];AFSL-HARbyWangetal.combinesthefeaturegenerationnetwork
+(FWGAN) to improve robustness in the recognition of new action categories [83]. The hybrid architecture
+fuses spatio-temporal features: hybrid structure combine CNN with Bi-LSTM by Sheng et al. first extracts
+CSI spatial features and then captures action timing through bidirectional LSTM, which is suitable for
+complexactivityclassification[ 74];THATmodelprocesseschannelandtimefeaturesthroughatwo-stream
+Transformer to achieve high-precision posture recognition [11]. Table 7summarizes the existing work on
+applyingdeeplearningtothefieldoflarge-scalehumanactivityrecognition.
+Table 7:AsurveyoftheexistingWiFilarge-scaleHARbasedondeeplearning
+Method Inputformat Network Corecontribution Limitation
+EI[113] CSIamplitude CNN Enablescross-domain
+sensingviapreprocessing
+Requiresunlabeled
+samplesinnewdomains
+CsiGAN[67] RawCSI CNN,
+GAN
+Mitigatesdatascarcity
+usingGAN-based
+generation
+Needsmanyunlabeled
+samples;unstableoutputs
+[10] CSIamplitude CNN Few-shotlearningwith
+strongrobustness
+Accuracy drops with
+manynewclasses
+CSI-
+GDAM[82]
+CSIamplitude CNN,
+GCN
+Exploitsactivity
+correlationtoboost
+performance
+High parameter count
+andmemory cost
+AutoFi [79] CSIamplitude CNN Adaptstonewdomains
+viaself-supervised
+learning
+Requiresuser
+participationforfew
+labels
+WiTeacher[114] RawCSI GAN Generateslabeled
+samplesintargetdomain
+High model complexity
+[50] CSIspectrogram CNN Capturesmotionfeatures
+acrossdomains
+Performance tied to user
+location/orientation
+FallDar [61]R a w C S I D N NR o b u s t t o u s e r , a c t i v i t y ,
+andenvironment
+diversity
+Smalldatasetandhigh
+falsealarmrate
+(Continued)
+
+--- PAGE 16 ---
+16 ComputMaterContin. 2026;86(1)
+Table 7 (continued)
+Method Inputformat Network Corecontribution Limitation
+[74] CSIamplitude CNN,
+Bi-LSTM
+Extractsrich
+spatio-temporalfeatures
+CNNreceptivefieldis
+limited
+THAT[11] RawCSI Transformer Improvesrecognition
+accuracyandefficiency
+Complexandhardto
+train
+5.3.2Small-ScaleActivity
+Compared with large-scale actions, small-scale activities (such as breathing and gestures) cause CSI
+disturbanceswithlowersignal-to-noiseratios,whichareeasilymaskedbybackgroundnoise,placinghigher
+demandsondataresolutionandmodelsensitivity.Ingesturerecognitiontasks,CNNisoftencombinedwith
+spectrograms:TheSignFisystembyMAetal.convertsCSIintoimagesandusesCNNtorecognize276types
+ofgestures[ 115]; Zhang et al.’s Widar3.0 estimates the Body Velocity Profile (BVP) and inputs it into hybrid
+architecturewithCNNandGRUtoachievecross-domaingesturerecognition[ 12].
+Physiological signal monitoring is another research focus: The ResFi system processes CSI amplitude
+usingaCNNandachieves96.05%accuracyinbreathingdetection[ 112];WiFi-sleepusesCNNandBiLSTM
+toclassifyfoursleepstageswithanaveragerecognitionrateof94.80%[ 116].Akeychallengeisimprovingthe
+signal-to-noiseratioofmicro-motions.Forexample,CSIfluctuationscausedbybreathingareeasilymasked
+by environmental noise, requiring denoising algorithms (e.g., wavelet transform) and high-resolution CSI
+acquisitiontools(e.g.,FeitCSI). Table 8summarizestheexistingworkonapplyingdeeplearningtothefield
+ofsmall-scaleWiFihumanactivityrecognition.
+Table 8:AsurveyoftheexistingWiFismall-scaleHARbasedondeeplearning
+Method Inputformat Network Corecontribution Limitation
+SignFi[115]C S I a m p l i t u d e
++phase
+CNN Recognizes276gesture
+typesincluding
+fine-grainedactions
+Unabletogeneralize
+acrossdomains
+EI[113] CSIamplitude CNN Enablescross-domain
+gesturerecognition
+Requiresmanyunlabeled
+samples for adaptation
+[117] CSIphase CNN,
+Bi-LSTM
+One-shotlearningvia
+spatio-temporal
+representation
+Highcomplexityand
+longtrainingtime
+ML-
+DFGR[118]
+CSIamplitude CNN Domainadaptationvia
+episode-basedtraining
+Needslabeleddatafrom
+thetargetdomain
+WiGr [119] CSIamplitude
++phase
+CNN Enhancesclassseparation
+usingmetric
+regularization
+Requireslabeleddatain
+newenvironments
+Widar3.0[12] RawCSI CNN,
+GRU
+Domain-generalizable
+withone-shottraining
+Complexdatasetdesign;
+requirespositioninfo
+(Continued)
+
+--- PAGE 17 ---
+ComputMaterContin. 2026;86(1) 17
+Table 8 (continued)
+Method Inputformat Network Corecontribution Limitation
+AirFi[120] CSIamplitude CNN Nodatacollectionor
+modelupdateneededfor
+newdomains
+Needsmultiplesource
+domaindata
+ResFi[112] CSIamplitude CNN Accuratelydetects
+respirationpatterns
+Weakgeneralization
+capability
+WiFi-
+Sleep[116]
+CSIamplitude
++phase
+CNN,
+Bi-LSTM
+Enablesfour-stagesleep
+monitoringwithlimited
+data
+Poorgeneralization
+across environments
+To provide a holistic view, we further summarize representative deep learning models across different
+human sensing tasks inTable 9. While task-specific methods detailed,Table 9offers a unified comparison
+highlighting the enhanced sensing capability in various application scenarios. The table presents input for-
+mats, network architectures, performance improvements, and known limitations, thereby allowing readers
+toclearly observe how deep learningcontributes to robustness,accuracy,andadaptabilityacross detection,
+localization,andrecognitiontasks.
+Table 9:Comparative summary of representative deep learning models for WiFi human sensing across application
+scenarios
+Application Represen-
+tativemodel
+InputFormat Network Enhancement
+(Performance
+gain)
+Limitation
+IDSDL[72]C S I p h a s e
+(withoutlier
+removal)
+CNN AccurateNLOS
+detectionvia
+multipath feature
+learning
+Requiresretraining
+innew
+environments
+Detection C-
+MuRP [73]
+CSI
+amplitude
+(multi-room)
+CNN,GRU Multi-room
+presencedetection
+with
+spatio-temporal
+features
+Limi tedtoLOS
+data
+TWMD[ 86]C S I
+amplitude,
+phase
+MLP Robustdetection
+through
+glass/brickwalls
+Sensitiveto
+environmental
+clutter
+Wisual [84]J o i n t
+multi-feature
+spectral
+matrix(AoA,
+ToF, FoC)
+3DCNN Visualizesdensity
+distributionand
+estimatescrowd
+size
+Performance
+decreasesindense
+crowds
+(Continued)
+
+--- PAGE 18 ---
+18 ComputMaterContin. 2026;86(1)
+Table 9 (continued)
+Application Represen-
+tativemodel
+InputFormat Network Enhancement
+(Performance
+gain)
+Limitation
+Crowd
+(Count-
+ing)
+Door-
+Monitor [91]
+CSI
+spectrogram
+(STFT)
+CNN Accurate
+door-crossing
+counting
+Accuracy drops in
+reversemovement
+DASECount[58]C S I
+amplitude +
+phase
+difference
+CNN,
+Few-shot
+Sample-efficient
+countingacross
+domains
+Sensitiveto
+device/environment
+variation
+ConFi[101]C S I
+amplitude
+(image)
+CNN Achieves
+sub-meter
+accuracywith
+reduced
+parameters
+Weak
+generalization
+(amplitudeonly)
+Localization CiFi[102]C S I p h a s e
+(AoAimages)
+CNN Robustto
+multipath
+interference
+Limited
+representation
+(phaseonly)
+ResLoc[103]C S I
+amplitude +
+AoA
+Residual
+CNN
+Improved accuracy
+viabimodalCSI
+tensors
+Hightrainingcost
+Movement
+Tracking
+CRLoc[107]C S I
+amplitude +
+phase
+CRNN,
+Variational
+Bayesian
+Accurate tracking
+inshipscenarios
+Limitedfor
+multi-person
+tracking
+Recognition
+CSI-
+GDAM[82]
+CSI
+amplitude
+CNN,
+GCN,
+Meta-
+learning
+Few-shot
+recognition of new
+activities
+High parameter
+cost
+(Large-
+scale)
+THAT[11]R a w C S I T w o -
+stream
+CNN,
+Trans-
+former
+High-precision
+poserecognition
+Complextraining,
+highcomputation
+SignFi[115]C S I
+amplitude +
+phase(image)
+CNN Recognizes276
+gestureswithhigh
+accuracy
+Poorcross-domain
+generalization
+(Continued)
+
+--- PAGE 19 ---
+ComputMaterContin. 2026;86(1) 19
+Table 9 (continued)
+Application Represen-
+tativemodel
+InputFormat Network Enhancement
+(Performance
+gain)
+Limitation
+Recognition
+(Small-
+scale)
+Widar3.0[12]R a w C S I
+(Body
+Velocity
+Profile)
+CNN,GRU Domain-
+generalizable
+gesturerecognition
+Dataset
+complexity,
+requiresposition
+information
+WiFi-
+Sleep[116]
+CSI
+amplitude +
+phase
+CNN,
+BiLSTM
+Four-stagesleep
+monitoringwith
+>94%accuracy
+Poor
+generalization
+across
+environments
+As shown inTable 9,deeplearninghassignificantlyadvancedCSI-basedhumansensingbyenhancing
+robustnessinNLOSscenarios,enablingcross-domainrecognition,andimprovingfine-grainedlocalization
+accuracy. However, despite these achievements, practical deployment still faces challenges such as cross-
+environment generalization and multi-user interference, which are discussed in the following section on
+limitationsandfuturetrends.
+6 LimitationsandFutureTrend
+Althoughdeeplearninghassubstantiallyimprovedt heperformanceofhumansensingsystems,several
+challengesstillhinderitspracticaldeployment.Thissectionanalyzestechnicalbottlenecksfromtheperspec-
+tives of data, models, and hardware, and outlines future research directions based on emerging trends.
+6.1 Limitations
+Lack of standardized datasets and evaluation metrics:Most existing studies [10,73,89,113]r e l yo n
+self-collecteddatasets,whichdiffersubstantiallyinacquisitionenvironments,hardwareplatforms,numbers
+of participants, and activity definitions. These discrepancies make it extremely difficult to conduct fair
+quantitative comparisons across models. Moreover, the absence of unified labeling protocols and widely
+acceptedevaluationmetricsfurtherlimitsreproducibility,asperformancemeasuressuchasaccuracyorF1-
+s c o r e sr e p o r t e di no n es e t t i n ga r eo ft e nn o td i r e c t l yc o m p a r a b l et ot h o s eo b t a i n e di na n o t h e r .Th i si s s u ei s
+particularlysevereforlow-probabilityorsafety-criticaleventssuchasfallsorsuddenstops,wherecollecting
+large-scale,high-qualitysamplesisresource-intensive.
+Several public datasets have been released for WiFi-based HAR, as summarized inTable 10.Th e s e
+datasets include Widar, Widar3.0, SignFi, UT-HAR, and others, covering tasks such as gesture recognition,
+dailyactivities,sleepmonitoring,andfalldetection.However,asshowninthetable,theydiffersignificantly
+in terms of activity categories, number of participants, hardware platforms, and data availability. Conse-
+quently, while these resources are valuable for advancing research, the lack of a unified and comprehensive
+benchmarkstillhindersreproducibility andfaircross-modelcomparison.
+
+--- PAGE 20 ---
+20 ComputMaterContin. 2026;86(1)
+Table 10:SummaryofpubliclyavailabledatasetsforWiFi-basedHAR
+Dataset Year Devices Activities/Gestures Link
+Widar 2018 Intel5300NIC 22Gestures TsinghuaDisk
+SignFi 2019 COTSWiFi 276Gestures Github/SignFi
+UT-HAR 2020 Intel5300NIC 7Dailyactivities Github/UT-HAR
+Gaitid 2020 Linux802.11nCSItool 11HumanGait SDP4ISAC
+Widar3.0 2021 Intel5300NIC 6Gestures TsinghuaDisk
+WiAR 2022 ESP32CSItoolkit 16Activities Github/WiAR
+Wi-CaL 2022 ESP32CSItoolkit Crowdandlocalization Github/Wi-CaL
+SiMWiSense 2023 Nexmon 20Dailyactivities Github/SiMWiSense
+WiMANS 2024 Linux802.11nCSItool 9Dailyactivities Github/WiMANS
+Signal interference in multi-user environments:In scenarios involving multiple users, CSI signals
+ofteninterferewithoneanother[ 90],makingitdifficulttocontrolvariablessuchasusercount,actiontypes,
+and spatial layouts [84]. As the number of users increases, the complexity of activity combinations grows
+exponentially,requiringmanualannotationsthatcovervariousinteractions(e.g.,collaboration,occlusion).
+However, most current studies [74] are limited to simplified settings with single-user activities and lack
+standardizedannotationframeworksformulti-userscenarios,resultinginannotationcoststhatscalepoorly
+with the number of users. More importantly, such interference directly degrades sensing accuracy, as
+overlapping motion patterns are difficult to separate, resulting in reduced recognition and localization
+accuracy in realistic crowded environments.
+Robustness and generalization:Deep learning models [58,99,107,121]o ft e ns t r u g g l et om a i n t a i n
+robustness under varying environmental conditions such as lighting, background noise, and spatial con-
+figurations. This is largely because training datasets are usually collected from constrained settings and
+specific populations, making it difficult for models to generalize to unseen environments or user groups.
+Furthermore, sampling bias can cause models to perform well on specific demographics or scenarios while
+degradinginothers,limitingtheirapplicabilityindiversereal-worldsettings.Inparticular,sensingaccuracy
+in cluttered or non-line-of-sight (NLOS) environments is severely affected by multipath propagation and
+temporal variations (e.g., furniture re-arrangements, doors opening/closing). Location dependence further
+exacerbates this problem, as most CSI-based HAR models rely on site-specific fingerprints and thus suffer
+significant accuracy degradation when deployed in new environments. For fine-grained tasks such as
+respiration monitoring and gesture recognition, low signal-to-noise ratios further exacerbate recognition
+errors, highlighting the need for robust feature representations and adaptive learning strategies to sustain
+performance incomplex scenarios.
+Privacyandsecurity: CSIinherentlyencodessensitiveinformation,suchasspatialpositionandphys-
+iological traits (e.g., posture inferred from phase differences [122]), yet existing deep learning models lack
+sufficientresilienceagainstadversarialattacks.Forexample,attackerscanmanipulateCSIphaseinformation
+withcraftedinterferencesignals,producingincorrectoutputssuchasfalselocationpredictions.Traditional
+adversarialtrainingtechniques[ 123]areoftenineffectiveagainstsuchphase-specificattacks,compromising
+themodel’srobustnessinprivacy-criticalapplicatio ns.Moreover,toimprovesensingaccuracy,deeplearning
+models typically exploit fine-grained CSI features (e.g., subcarrier-level phase differences), which may
+inadvertently reveal user-identifiable traits such as gait patterns [124], raising concerns over the balance
+betweensensingaccuracyandprivacyprotection.
+
+--- PAGE 21 ---
+ComputMaterContin. 2026;86(1) 21
+Deployment complexity:Large model sizes and reliance on complex preprocessing make real-world
+deployment challenging. CSI extraction is currently supported only by a limited range of WiFi chipsets
+(e.g., Intel 5300 [1]), while edge devices like ESP32 lack sufficient computational capacity to run deep
+learningmodelsefficiently[ 28].Additionally,CSIacquisitionoftendependsonproprietarydriversorcustom
+firmware,furtherimpedinglarge-scaledeploymentandsystemintegration.
+6.2 FutureTrend
+Source datasets and codes:Open-access datasets and code repositories are crucial for improving
+reproducibility and comparability in deep learning–enhanced human sensing research. Public availability
+ofrawCSIdatasetsandwell-documentedimplementationsallowsresearcherstovalidatepreviousfindings,
+accelerate algorithm development, and reduce redundant efforts. Furthermore, accessible resources con-
+tributetothegradualestablishmentofcommonbenchmarks,whichcanenhancecross-studycomparability.
+An open ecosystem of datasets and codes not only fosters academic collaboration but also facilitates
+technologytransfertowardpracticalapplications.
+Lightweight models and on-device deployment:Adopting lightweight deep neural networks is a
+key direction to enable practical deployment. These models aim to capture the complex spatio-temporal
+characteristicsofWiFisignalswhilemaintaininghighaccuracyintaskssuchasactivityrecognitionandpose
+estimation. Future work should also develop task-specific evaluation methodologies to ensure model relia-
+bilityandadaptabilityinreal-worldsettings,pavingthewayforintegrationintoedge-intelligentapplications.
+Multimodalfusionandscenecollaboration: Multimodalfusioncanbeimplementedatthreelevels—
+data, feature, and decision. At the data level, signals from heterogeneous sensors such as WiFi, vision,
+and infrared are integrated; at the feature level, cross-modal abstract representations are combined; and
+at the decision level, complementary outputs are fused to enhance robustness. This approach strengthens
+the model’s adaptability to complex environments by leveraging multi-dimensional information, enabling
+high-precisionsensinginreal-worldscenarios.
+LLM-assistedsemanticunderstanding: Current human sensingsystemsprimarily focus on low-level
+activity recognition (e.g., walking, sitting, falling) and lack the capacity for high-level semantic reasoning.
+The emergence of large language models (LLMs) offers new opportunities to bridge the gap toward high-
+level semantic understanding. By treating intermediate outputs such as activity labels, locations, and
+movementtrajectoriesascontextualinputs,LLMscaninferhigher-leveluserintent(e.g.,“preparingbreak-
+fast,” “leaving home”). This shift from signal-level to semantic-level understanding enables more intuitive
+human–computer interaction, particularly in smart home and eldercare applications. Future research may
+explorepromptengineering,reasoningchainconstruction,andfew-shotsemanticalignmenttodrivedeeper
+integrationbetweenLLMsandhumansensingsystems.
+7 Conclusion
+This review has systematically examined deep learning-enhanced human sensing using CSI, covering
+keycomponentsincludingsignalacquisitiontools,datapreprocessingtechniques,andrepresentativeneural
+network architectures. We categorized and analyzed existing works based on three major sensing tasks:
+detection, localization, and recognition. Finally, we discussed critical technical bottlenecks, with particular
+emphasis on multi-user signal processing and environmental generalization. Looking ahead, open-source
+datasets, lightweight network architectures, and multimodal fusion techniques are expected to play central
+rolesinadvancingthisfield.
+
+--- PAGE 22 ---
+22 ComputMaterContin. 2026;86(1)
+Acknowledgement: TheauthorswouldliketothankUniversityofElectronicScienceandTechnologyofChina.
+Funding Statement:This research was supported by National Natural Science Foundation of China (NSFC) under
+grantU23A20310.
+Author Contributions:Binglei Yue, Aili Jiang, Chun Yang, Junwei Lei and Heng Liu: Investigation, Data Curation,
+Writing—Original Draft, Review and Editing, Visualization. Yin Zhang: Writing—Review and Editing, Supervision,
+Funding.Allauthorsreviewedtheresultsandapprovedthefinalversionofthemanuscript.
+AvailabilityofDataandMaterials: Not applicable.
+EthicsApproval: Not applicable.
+ConflictsofInterest: The authorsdeclare no conflicts of interest to report regarding the present study.
+References
+1. Ma Y, Zhou G, Wang S. WiFi sensing with channel state information: a survey. ACM Comput Surveys (CSUR).
+2019;52(3):1–36.doi:10.1145/3310194.
+2. Yang J, Chen X. Toward ubiquitous sensing: researchers turn WiFi signals into human activity patterns. Patterns.
+2023;4(3):100707.doi:10.1016/j.patter.2023.100707.
+3 . S h a oZ ,C h e n gG ,M aJ ,W a n gZ ,W a n gJ ,L iD .R e a l - t i m ea n da c c u r a t eU A Vp e d e s t r i a nd e t e c t i o nf o rs o c i a l
+distancing monitoring in COVID-19 pandemic. IEEE Trans Multimed. 2021;24:2069–83. doi:10.1109/tmm.2021.
+3075566.
+4. Meng Z, Xia X, Xu R, Liu W, Ma J. HYDRO-3D: hybrid object detectionand tracking for cooperative perception
+using3DLiDAR.IEEETransIntellVeh.2023;8(8):4069–80.doi:10.1109/tiv.2023.3282567.
+5. Fang SH, Li CC, Lu WC, Xu Z, Chien YR. Enhanced device-free human detection: efficient learning from phase
+and amplitude of channel state information. IEEE Trans Veh Technol. 2019;68(3):3048–51. doi:10.1109/tvt.2019.
+2892563.
+6. LiuY,WangT,JiangY,ChenB.HarvestingambientRFforpresencedetectionthroughdeeplearning.IEEETrans
+NeuralNetwLearnSyst.2020;33(4):1571–83.doi:10.1109/tnnls.2020.3042908.
+7. WangD,YangJ,CuiW,XieL,SunS.CAUTION:aRobustWiFi-basedhumanauthenticationsystemviafew-shot
+open-setrecognition.IEEEInternetThingsJ.2022;9(18):17323–33.doi:10.1109/jiot.2022.3156099.
+8. Rao X, Luo Z, Luo Y, Yi Y, Lei G, Cao Y. MFFALoc: CSI-based multifeatures fusion adaptive device-free passive
+indoorfingerprintinglocalization.IEEEInternetThingsJ.2023;11(8):14100–14.doi:10.1109/jiot.2023.3339797.
+9 . Z h a n gL ,W uS ,Z h a n gT ,Z h a n gQ .L e a r n i n gt ol o c a t e :a d a p t i v efi n g e r p r i n t - b a s e dl o c a l i z a t i o nw i t hf e w - s h o t
+relationlearningindynamicindoorenvironments.IEEETransWirelCommun.2023;22(8):5253–64.doi:10.1109/
+twc.2022.3232858.
+10. ZhangY,WangX,WangY,ChenH.HumanactivityrecognitionacrossscenesandcategoriesbasedonCSI.IEEE
+TransMobileComput.2020;21(7):2411–20.doi:10.1109/tmc.2020.3041756.
+11. LiB,CuiW,WangW,ZhangL,ChenZ,WuM.Two-streamconvolutionaugmentedtransformerforhumanactivity
+recognition.ProcAAAIConfArtifIntell.2021;35(1):286–93.doi:10.1609/aaai.v35i1.16103.
+12. Zhang Y, Zheng Y, Qian K, Zhang G, Liu Y, Wu C, et al. Widar3.0: zero-effort cross-domain gesture recognition
+withWi-Fi.IEEETransPatternAnalMachIntell.2021;44(11):8671–88.doi:10.1109/tpami.2021.3105387.
+13. Ahmadipour M, Kobayashi M, Wigger M, Caire G. An information-theoretic approach to joint sensing and
+communication.IEEETransInfTheory.2022;70(2):1124–46.doi:10.1109/tit.2022.3176139.
+1 4 . L i uJ ,L i uH ,C h e nY ,W a n gY ,W a n gC .W i r e l e s ss e n s i n gf o rh u m a na c t i v i t y :as u r v e y .I E E EC o m m u nS u r v e y s
+Tutorials.2019;22(3):1629–45.
+15. Chen C, Zhou G, Lin Y. Cross-domain WiFi sensing with channel state information: a survey. ACM Comput
+Surveys.2023;55(11):1–37.doi:10.1145/3570325.
+
+--- PAGE 23 ---
+ComputMaterContin. 2026;86(1) 23
+16. Li H, Ota K, Dong M. Learning IoT in edge: deep learning for the Internet of Things with edge computing. IEEE
+Netw.2018;32(1):96–101.doi:10.1109/mnet.2018.1700202.
+17. WangX,WangX,MaoS.RFsensingintheInternetofThings:ageneraldeeplearningframework.IEEECommun
+Magaz.2018;56(9):62–7.doi:10.1109/mcom.2018.1701277.
+18. AhmedHFT,AhmadH,AravindCV.DevicefreehumangesturerecognitionusingWi-FiCSI:asurvey.EngAppl
+ArtifIntell.2020;87(6):103281.doi:10.1016/j.engappai.2019.103281.
+19. Schmidhuber J. Deep learning in neural networks: an overview. Neural Netw. 2015;61(3):85–117. doi:10.1016/j.
+neunet.2014.09.003.
+20. ZapponeA,DiRenzoM,DebbahM.Wirelessnetworksdesignintheeraofdeeplearning:model-based,AI-based,
+orboth?IEEETransCommun.2019;67(10):7331–76.doi:10.1109/tcomm.2019.2924010.
+21. Yang J, Chen X, Zou H, Wang D, Xu Q, Xie L. EfficientFi: toward large-scale lightweight WiFi sensing via CSI
+compression.IEEEInternetThingsJ.2022;9(15):13086–95.doi:10.1109/jiot.2021.3139958.
+22. NirmalI,KhamisA,HassanM,HuW,ZhuX.Deeplearningforradio-basedhumansensing:recentadvancesand
+future directions.IEEE Commun Surveys Tutorials.2021;23(2):995–1019.
+2 3 . Y a n gJ ,C h e nX ,Z o uH ,L uC X ,W a n gD ,S u nS ,e ta l .S e n s e F i :al i b r a r ya n db e n c h m a r ko nd e e p - l e a r n i n g -
+empoweredWiFihumansensing.Patterns.2023;4(3):100707.doi:10.1016/j.patter.2023.100703.
+24. DavasliogluK,SoltaniS,ErpekT,SagduyuYE.DeepWiFi:cognitiveWiFiwithdeeplearning.IEEETransMobile
+Comput.2019;20(2):429–44.doi:10.1109/tmc.2019.2949815.
+2 5 . H a l p e r i nD ,H uW ,S h e t hA ,W e t h e r a l lD .T o o lr e l e a s e :g a t h e r i n g8 0 2 . 1 1nt r a c e sw i t hc h a n n e ls t a t ei n f o r m a t i o n .
+ACMSIGCOMMComputCommunRev.2011;41(1):53.
+26. Xie Y, Li Z, Li M. Precise power delay profiling with commodity WiFi. In: Proceedings of the 21st Annual
+InternationalConferenceonMobileComputingandNetworking;2015Sep7–11;Paris,France.p.53–64.
+27. GringoliF,SchulzM,LinkJ,HollickM.FreeyourCSI:achannelstateinformationextractionplatformformodern
+Wi-Fichipsets.In:Proceedingsofthe13thInternationalWorkshoponWirelessNetworkTestbeds,Experimental
+Evaluation&Characterization;2019Oct25;LosCabos,Mexico.p.21–8.
+28. Hernandez SM, Bulut E. Lightweight and standalone IoT based WiFi sensing for active repositioning and
+mobility. In: 2020 IEEE 21st International Symposium on “A World of Wireless, Mobile and Multimedia
+Networks”(WoWMoM);2020Aug31–Sep3;Cork,Ireland.p.277–86.
+29. HutarM,BridaP,FeitCSIJM.Feitcsi,the802.11csitool[Internet].2023[cited2025Sep28].Availablefrom: https://
+feitcsi.kuskosoft.com.
+30. JiangZ,LuanTH,RenX,LvD,HaoH,WangJ,etal.Eliminatingthebarriers:demystifyingWi-Fibasebanddesign
+and introducing the PicoScenes Wi-Fi sensing platform. IEEE Internet Things J. 2021;9(6):4476–96. doi:10.1109/
+jiot.2021.3104666.
+3 1 . D i n gJ ,W a n gY .W i F iC S I - b a s e dh u m a na c t i v i t yr e c o g n i t i o nu s i n gd e e pr e c u r r e n tn e u r a ln e t w o r k .I E E EA c c e s s .
+2019;7:174257–69.doi:10.1109/access.2019.2956952.
+32. Chen Y, Wei Y, Pang D, Xue G. A deep learning approach based on continuous wavelet transform towards fall
+detection. In: International Conference on Wireless Algorithms, Systems, and Applications. Cham, Switzerland:
+Springer; 2022. p. 206–17.
+33. Zeng Y, Wu D, Xiong J, Zhang D. Boosting WiFi sensing performance via CSI ratio. IEEE Pervasive Comput.
+2020;20(1):62–70.doi:10.1109/mprv.2020.3041024.
+34. LiuJ,ZengY,GuT,WangL,ZhangD.WiPhone:smartphone-basedrespirationmonitoringusingambientreflected
+WiFisignals.ProcACMInteractMobileWearableUbiquitousTechnol.2021;5(1):1–19.
+35. Sardy S, Tseng P, Bruce A. Robust wavelet denoising. IEEE Trans Signal Process. 2001;49(6):1146–52. doi:10.1109/
+78.923297.
+36. WenX,SongX,ZhengZ,WangB,GuoY.Amulti-classdatasetexpansionmethodforWi-Fi-basedfalldetection.
+In:2022IEEEMTT-SInternationalMicrowaveBiomedicalConference(IMBioC);2022May16–18;Suzhou,China.
+p. 195–7.
+37. PalipanaS,RojasD,AgrawalP,PeschD.FallDeFi:ubiquitousfalldetectionusingcommodityWi-Fidevices.Proc
+A CMI n teractM ob ileW earableUb iqui tousT echnol.2018;1:1–25.
+
+--- PAGE 24 ---
+24 ComputMaterContin. 2026;86(1)
+38. ZhangK,ZuoW,ChenY,MengD,ZhangL.Beyondagaussiandenoiser:residuallearningofdeepcnnforimage
+denoising.IEEETransImageProcess.2017;26(7):3142–55.doi:10.1109/tip.2017.2662206.
+39. Ye H, Gao F, Qian J, Wang H, Li GY. Deep learning-based denoise network for CSI feedback in FDD massive
+MIMOsystems.IEEECommunLetters.2020;24(8):1742–6.doi:10.1109/lcomm.2020.2989499.
+40. Rizzello V, Utschick W. Learning the CSI denoising and feedback without supervision. In: 2021 IEEE 22nd
+International Workshop on Signal Processing Advances in Wireless Communications (SPAWC); 2021 Sep 27–30;
+Lucca,Italy:IEEE.p.16–20.doi:10.1109/spawc51858.2021.9593213.
+41. Wang X, Yang C, Mao S. PhaseBeat: exploiting CSI phase data for vital sign monitoring with commodity WiFi
+devices.In:2017IEEE37thInternationalConferenceonDistributedComputingSystems(ICDCS);2017Jun5–8;
+Atlanta,GA,USA.p.1230–9.
+42. Tao M, Li X, Wei W, Yuan H. Jointly optimization for activity recognition in secure IoT-enabled elderly care
+applications.ApplSoftComput.2021;99(3):106788.doi:10.1016/j.asoc.2020.106788.
+43. Bruns A. Fourier-, Hilbert- and wavelet-based signal analysis: are they really different approaches? J Neurosci
+Methods.2004;137(2):321–32.doi:10.1016/j.jneumeth.2004.03.002.
+44. AkansuAN,HaddadRA.Multiresolutionsignaldecomposition:transforms,subbands,andwavelets.Boston,MA,
+USA:AcademicPress;2001.
+45. Liu L, Hsu H. Inversion and normalization of time-frequency transform. In: 2011 International Conference on
+M ul timediaT echnology;2011J ul26–28;H angzhou,China.p .2164–8.
+4 6 . T a h i rA ,A h m a dJ ,S h a hS A ,M o r i s o nG ,S k e l t o nD A ,L a r i j a n iH ,e ta l .W i F r e e z e :m u l t i r e s o l u t i o ns c a l o g r a m sf o r
+freezing of gait detection in Parkinson’s leveraging 5G spectrum with deep learning. Electronics. 2019;8(12):1433.
+doi:10.3390/electronics8121433.
+47. Shah SA, Ahmad J, Masood F, Shah SY, Pervaiz H, Taylor W, et al. Privacy-preserving wandering behavior
+sensing in dementia patients using modified logistic and dynamic Newton Leipnik maps. IEEE Sensors J.
+2020;21(3):3669–79.doi:10.1109/jsen.2020.3022564.
+48. Wang Y, Wu K, Ni LM. Wifall: device-free fall detection by wireless networks. IEEE Trans Mobile Comput.
+2016;16(2):581–94.doi:10.1109/infocom.2014.6847948.
+49. ShlensJ.Atutorialonprincipalcomponentanalysis.arXiv:1404.1100.2014.
+50. NakamuraT,BouaziziM,YamamotoK,OhtsukiT.Wi-Fi-basedfalldetectionusingspectrogramimageofchannel
+stateinformation.IEEEInternetThingsJ.2022;9(18):17220–34.doi:10.1109/jiot.2022.3152315.
+51. Wang W, Liu AX, Shahzad M, Ling K, Lu S. Understanding and modeling of wifi signal based human activity
+recognition.In:Proceedingsofthe21stAnnualInternationalConferenceonMobileComputingandNetworking;
+2015Sep7–11;Paris,France.p.65–76.
+52. WangW,LiuAX,ShahzadM.Gaitrecognitionusingwifisignals.In:Proceedingsofthe2016ACMInternational
+JointConferenceonPervasiveandUbiquitousComputing;2016Sep12–16;Heidelberg,Germany.p.363–73.
+53. Zhang Y, Wang W, Xu C, Qin J, Yu S, Zhang Y. SICD: novel single-access-point indoor localization based on
+CSI-MIMOwithdimensionalityreduction.Sensors.2021;21(4):1325.doi:10.3390/s21041325.
+54. Song Q, Guo S, Liu X, Yang Y. CSI amplitude fingerprinting-based NB-IoT indoor localization. IEEE Internet
+ThingsJ.2017;5(3):1494–504.doi:10.1109/jiot.2017.2782479.
+55. Haque KF, Zhang M, Restuccia F. Simwisense: simultaneous multi-subject activity classification through Wi-Fi
+signals. In: 2023 IEEE 24th International Symposium on a World of Wireless, Mobile and Multimedia Networks
+(WoWMoM);2023Jun12–15;Boston,MA,USA.p.46–55.
+56. Cheng X, Huang B. CSI-based human continuous activity recognition using GMM-HMM. IEEE Sensors J.
+2022;22(19):18709–17.doi:10.1109/jsen.2022.3198248.
+57. Zhang D, Wang H, Wang Y, Ma J. Anti-fall:a non-intrusive and real-time fall detector leveraging CSI from com-
+modity WiFi devices. In: International Conference on Smart Homes and Health Telematics. Cham, Switzerland:
+Springer; 2015. p. 181–93.
+58. HouH,BiS,ZhengL,LinX,WuY,QuanZ.DASECount:domain-agnosticsample-efficientwirelessindoorcrowd
+countingviafew-shotlearning.IEEEInternetThingsJ.2022;10(8):7038–50.doi:10.1109/jiot.2022.3228557.
+
+--- PAGE 25 ---
+ComputMaterContin. 2026;86(1) 25
+59. TaoM,LiX,XieR,DingK.Pedestrianidentificationandtrackingwithinadaptivecollaborationedgecomputing.
+In: 2023 26th International Conference on Computer Supported Cooperative Work in Design (CSCWD); 2023
+May24–26;RiodeJaneiro,Brazil.p.1124–9.
+60. LiuH,LongM,WangJ,JordanM.Transferableadversarialtraining:ageneralapproachtoadaptingdeepclassifiers.
+In:InternationalConferenceonMachineLearning;2019Jun9–15;LongBeach,CA,USA.p.4013–22.
+61. Yang Z, Zhang Y, Zhang Q. Rethinking fall detectionwith Wi-Fi. IEEE Trans Mob Comput. 2022;22(10):6126–43.
+doi:10.1109/tmc.2022.3188779.
+62. Zou H, Chen CL, Li M, Yang J, Zhou Y, Xie L, et al. Adversarial learning-enabled automatic WiFi indoor radio
+map construction and adaptation with mobile robot. IEEE Internet Things J. 2020;7(8):6946–54. doi:10.1109/jiot.
+2020.2979413.
+63. YadavSK,SaiS,GundewarA,RathoreH,TiwariK,PandeyHM,etal.CSITime:privacy-preservinghumanactivity
+recognitionusingWiFichannelstateinformation.NeuralNetw.2022;146(11):11–21.doi:10.1016/j.neunet.2021.11.011.
+64. ZhouZ,W angF ,Go ngW.i-Sam ple:a ugmen tdo mainadversarialada p ta tio nmodelsfo rW iFi-basedH AR.A CM
+TransSensorNetw.2024;20(2):1–20.doi:10.1145/3616494.
+65. CreswellA,WhiteT,DumoulinV,ArulkumaranK,SenguptaB,BharathAA.Generativeadversarialnetworks:an
+overview.IEEESignalProcessMagaz.2018;35(1):53–65.doi:10.1109/msp.2017.2765202.
+66. ChenX,LiH,ZhouC,LiuX,WuD,DudekG.Fido:ubiquito usfine-grainedwifi-basedlocalizationforunlabelled
+users via domain adaptation. In: Proceedings of The Web Conference 2020; 2020 Apr 20–24; Taipei, Taiwan. p.
+23–33.
+67. Xiao C, Han D, Ma Y, Qin Z. CsiGAN: robust channel state information-based activity recognition with GANs.
+IEEEInternetThingsJ.2019;6(6):10191–204.doi:10.1109/jiot.2019.2936580.
+68. KarrasT,LaineS,AilaT.Astyle-basedgeneratorarchitectureforgenerativeadversarialnetworks.In:Proceedings
+of the IEEE/CVF Conference on Computer Vision and Pattern Recognition; 2019 Jun 15–20; Long Beach, CA,
+USA.p.4401–10.
+69. Liu S, Zhao Y, Chen B. WiCount:a deep learning approach for crowd countingusing WiFi signals.In: 2017IEEE
+International Symposium on Parallel and Distributed Processing with Applications and 2017 IEEE International
+Conference on Ubiquitous Computing and Communications (ISPA/IUCC); 2017 Dec 12–15; Guangzhou, China.
+p. 967–74.
+70. Zhang J, Tang Z, Li M, Fang D, Nurmi P, Wang Z. CrossSense: towards cross-site and large-scale WiFi sensing.
+In: Proceedings of the 24th Annual International Conference on Mobile Computing and Networking; 2024 Nov
+18–22;NewDelhi,India.p.305–20.
+71. DingX,JiangT,ZhongY,HuangY,LiZ.Wi-Fi-basedlocation-independenthumanactivityrecognitionviameta
+learning.Sensors.2021;21(8):2654.doi:10.3390/s21082654.
+72. HuY,BaiF,YangX,LiuY.IDSDL:asensitiveintrusiondetectionsystembasedondeeplearning.EURASIPJWirel
+CommunNetw.2021;2021(1):95.doi:10.1186/s13638-021-01900-y.
+73. ChuFY,ChiuCJ,HsiaoAH,FengKT,TsengPH.WiFiCSI-baseddevice-freemulti-roompresencedetectionusing
+conditionalrecurrentnetwork.In:2021IEEE93rdVehicularTechnologyConference(VTC2021-Spring);2021Apr
+25–28;Helsinki,Finland.p.1–5.
+74. ShengB,XiaoF,ShaL,SunL.Deepspatial-temporalmodelbasedcross-sceneactionrecognitionusingcommodity
+WiFi.IEEEInternetThingsJ.2020;7(4):3592–601.doi:10.1109/jiot.2020.2973272.
+75. WangX,GaoL,MaoS,PandeyS.DeepFi:deeplearningforindoorfingerprintingusingchannelstateinformation.
+In:2015IEEEWirelessCommunicationsandNetworkingConference(WCNC);2015Mar9–12;NewOrleans,LA,
+USA.p.1666–71.
+76. Liu W, Dun Z. D-Fi: domain adversarial neural network based CSI fingerprint indoor localization. J Inf Intell.
+2023;1(2):104–14.doi:10.1016/j.jiixd.2023.04.002.
+77. Salman M, Caceres-Najarro LA, Seo YD, Noh Y. WiSOM: WiFi-enabled self-adaptive system for monitoring the
+occupancyinsmartbuildings.Energy.2024;294(5):130420.doi:10.1016/j.energy.2024.130420.
+78. Y angJ,T angS,XuY ,ZhouY ,XieL.Maskfi:unsupervisedlearningofwifiandvisionrepresentationsformultimodal
+humanactivityrecognition.arXiv:2402.19258.2024.
+
+--- PAGE 26 ---
+26 ComputMaterContin. 2026;86(1)
+79. Y angJ,ChenX,ZouH,W angD,XieL.Autofi:towardautomaticwi-fihumansensingviageometricself-supervised
+learning.IEEEInternetThingsJ.2022;10(8):7416–25.doi:10.1109/jiot.2022.3228820.
+80. KhanD,HoIWH.CrossCount:efficientdevice-freecrowdcountingbyleveragingtransferlearning.IEEEInternet
+ThingsJ.2022;10(5):4049–58.doi:10.1109/jiot.2022.3171449.
+81. Xiao X, Yan J. A transfer learning based CSI indoor localization using GASF image construction. In: 2023
+International Conference on Computer, Information and Telecommunication Systems (CITS); 2023 Jul 10–12;
+Genoa,Italy.p.1–7.
+82. Zhang Y, Chen Y, Wang Y, Liu Q, Cheng A. CSI-based human activity recognition with graph few-shot learning.
+IEEEInternetThingsJ.2021;9(6):4139–51.doi:10.1109/jiot.2021.3103073.
+83. WangY,YaoL,WangY,ZhangY.RobustCSI-basedhumanactivityrecognitionwithaugmentfewshotlearning.
+IEEESensorsJ.2021;21(21):24297–308.doi:10.1109/jsen.2021.3111030.
+8 4 . M aX ,X iW ,Z h a oX ,C h e nZ ,Z h a n gH ,Z h a oJ .W i s u a l :i n d o o rc r o w dd e n s i t ye s t i m a t i o na n dd i s t r i b u t i o n
+visualizationusingWi-Fi.IEEEInternetThingsJ.2021;9(12):10077–92.doi:10.1109/jiot.2021.3119542.
+85. Y uanZ,W uS,Y angX,H eA.Device-freesta tionaryh umandetectionwithwifiinthrough-the-wallscenarios.I n:
+InternationalConferenceonWirelessandSatelliteSystems.Cham,Switzerland:Springer;2019.p.201–8.
+8 6 . Y a n gX ,W uS ,Z h o uM ,X i eL ,W a n gJ ,H eW .I n d o o rt h r o u g h - t h e - w a l lp a s s i v eh u m a nt a r g e td e t e c t i o nw i t h
+WiFi.In: 2019IEEEGlobecomWorkshops(GCWkshps);2019Dec9–13;Waikoloa,HI,USA.p.1–6.doi:10.1109/
+gcwkshps45667.2019.9024327.
+87. Zhang Y, Wang X, Wen J, Zhu X. WiFi-based non-contact human presence detection technology. Sci Rep.
+2024;14(1):3605.doi:10.1038/s41598-024-54077-x.
+88. Zhou R, Lu X, Fu Y, Tang M. Device-free crowd counting with WiFi channel state information and deep neural
+networks.WirelNetw.2020;26(5):3495–506.doi:10.1007/s11276-020-02274-7.
+89. Guo Z, Xiao F, Sheng B, Sun L, Yu S. TWCC: a robust through-the-wall crowd counting system using ambient
+WiFisignals.IEEETransVehTechnol.2022;71(4):4198–211.doi:10.1109/tvt.2022.3140305.
+90. Shi W, Tahir U, Zhang H, Zhao J. Design and implementation of non-intrusive stationary occupancy count in
+elevator with wifi. In: International Conference on Broadband Communications, Networks and Systems. Cham,
+Switzerland:Springer;2019.p.3–19.
+91. Yang Y, Cao J, Liu X, Liu X. Door-monitor: counting in-and-out visitors with COTS WiFi devices. IEEE Internet
+ThingsJ.2019;7(3):1704–17.doi:10.1109/jiot.2019.2953713.
+92. Zhou R, Gong Z, Lu X, Fu Y. WiFlowCount: device-free people flow counting by exploiting doppler effect in
+commodityWiFi.IEEESystJ.2020;14(4):4919–30.doi:10.1109/jsyst.2019.2961735.
+93. GuoJ,GuX,LiuZ,JiM,WangJ,YinX,etal.CM-NET:cross-modallearningnetworkforCSI-basedindoorpeople
+countingininternetofthings.Electronics.2022;11(24):4113.doi:10.3390/electronics11244113.
+94. Huynh MK, Nguyen DA. A research on automated guided vehicle indoor localization system via CSI. In: 2019
+International Conference on System Science and Engineering (ICSSE); 2019 Jul 20–21; Dong Hoi, Vietnam.
+p. 581–5.
+95. Berruet B, Baala O, Caminada A, Guillet V. DelFin: a deep learning based CSI fingerprinting indoor localization
+in IoT context. In: 2018 International Conference on Indoor Positioning and Indoor Navigation (IPIN); 2018 Sep
+24–27; Nantes, France. p. 1–8.
+96. Liu H, Yang J, Sidhom S, Wang Y, Chen Y, Ye F. Accurate WiFi based localization for smartphones using peer
+assistance.IEEETransMobileComput.2013;13(10):2199–214.doi:10.1109/tmc.2013.140.
+97. Kotaru M, Katti S. Position tracking for virtual reality using commodity WiFi. In: Proceedings of the IEEE
+ConferenceonComputerVisionandPatternRecognition;2017Jul21–26;Honolulu,HI,USA.p.68–78.
+98. Lin CL, Chang WJ, Tu GH. Wi-Fi-based tracking of human walking for home health monitoring. IEEE Internet
+ThingsJ.2021;9(11):8935–42.doi:10.1109/jiot.2021.3118429.
+99. Gönülta¸sE,LeiE,LangermanJ,HuangH,StuderC.CSI-basedmulti-antennaandmulti-pointindoorpositioning
+usingprobabilityfusion.IEEETransWirelCommun.2021;21(4):2162–76.doi:10.1109/twc.2021.3109789.
+100. Li Z, Rao X. Toward long-term effective and robust device-free indoor localization via channel state information.
+IEEEInternetThingsJ.2021;9(5):3599–611.doi:10.1109/jiot.2021.3098019.
+
+--- PAGE 27 ---
+ComputMaterContin. 2026;86(1) 27
+101. Chen H, Zhang Y, Li W, Tao X, Zhang P. ConFi: convolutional neural networks based indoor Wi-Fi localization
+usingchannelstateinformation.IEEEAccess.2017;5:18066–74.doi:10.1109/access.2017.2749516.
+102. WangX,WangX,MaoS.DeepconvolutionalneuralnetworksforindoorlocalizationwithCSIimages.IEEETrans
+NetwSciEng.2018;7(1):316–27.doi:10.1109/tnse.2018.2871165.
+103. Wang X, Wang X, Mao S. Indoor fingerprinting with bimodal CSI tensors: a deep residual sharing learning
+approach.IEEEInternetThingsJ.2020;8(6):4498–513.doi:10.1109/jiot.2020.3026608.
+104. Cui W, Zhang L, Li B, Chen Z, Wu M, Li X, et al. Semi-supervised deep adversarial forest for cross-environment
+localization.IEEETransVehTechnol.2022;71(9):10215–9.doi:10.1109/tvt.2022.3182039.
+1 0 5 .H o a n gM T ,Y u e nB ,R e nK ,D o n gX ,L uT ,W e s t e n d o r pR ,e ta l .AC N N - L S T Mq u a n t i fi e rf o rs i n g l ea c c e s sp o i n t
+CSIindoorlocalization.arXiv:2005.06394.2020.
+106. Yang G. WiLocus: CSI based human tracking system in indoor environment. In: 2016 Eighth International
+ConferenceonMeasuringTechnologyandMechatronicsAutomation(ICMTMA);2016Mar11–12;Macau,China.
+p.915–8.
+107. Liu K, Yang W, Chen M, Zheng K, Zeng X, Zhang S, et al. Deep-learning-based wireless human motion tracking
+formobileshipenvironments.IEEEInternetThingsJ.2022;9(23):24186–98.doi:10.1109/jiot.2022.3189698.
+108. Chen CL, Ko CH, Wu SH, Tseng HS, Chang RY. Device-free target following with deep spatial and temporal
+structuresofCSI.JSignalProcessSyst.2023;95(11):1327–40.doi:10.1007/s11265-023-01862-y.
+109. Qian K, Wu C, Zhang Y, Zhang G, Yang Z, Liu Y. Widar2.0: passive human tracking with a single Wi-Fi link. In:
+Proceedingsofthe16thAnnualInternationalConferenceonMobileSystems,Applications,andServices;2018Jun
+10–15;Munich,Germany.p.350–61.
+110. ShiS,SiggS,ChenL,JiY.AccuratelocationtrackingfromCSI-basedpassivedevice-freeprobabilisticfingerprint-
+ing.IEEETransVehiTechnol.2018;67(6):5217–30.doi:10.1109/tvt.2018.2810307.
+111. Hussain Z, Sheng QZ, Zhang WE. A review and categorization of techniques on device-free human activity
+recognition.JNetwComputAppl.2020;167:102738.doi:10.1016/j.jnca.2020.102738.
+112. HuJ,YangJ,OngJB,WangD,ResFiXieL.WiFi-enableddevice-freerespirationdetectionbasedondeeplearning.
+In: 2022 IEEE 17th International Conference on Control & Automation (ICCA); 2022 Jun 27–30; Naples, Italy.
+p.510–5.
+113. JiangW,MiaoC,MaF,YaoS,WangY,YuanY,etal.Towardsenvironmentindependentdevicefreehumanactivity
+recognition.In:Proceedingsofthe24thAnnualInternationalConferenceonMobileComputingandNetworking;
+2018Oct29–Nov2;NewDelhi,India.p.289–304.
+114. XiaoC,LeiY,LiuC,WuJ.Meanteacher-basedcross-domainactivityrecognitionusingWiFisignals.IEEEInternet
+ThingsJ.2023;10(14):12787–97.doi:10.1109/jiot.2023.3256324.
+115. Ma Y, Zhou G, Wang S, Zhao H, Jung W. SignFi: sign language recognition using WiFi. Proc ACM Interact Mob
+WearableUbiquitousTechnol.2018;2:1–21.
+116. Yu B, Wang Y, Niu K, Zeng Y, Gu T, Wang L, et al. WiFi-sleep: sleep stage monitoring using commodity Wi-Fi
+devices.IEEEInternetThingsJ.2021;8(18):13900–13.doi:10.1109/jiot.2021.3068798.
+117. YangJ,ZouH,ZhouY,XieL.LearninggesturesfromWiFi:asiameserecurrentconvolutionalarchitecture.IEEE
+InternetThingsJ.2019;6(6):10763–72.doi:10.1109/jiot.2019.2941527.
+118. MaX,ZhaoY,ZhangL,GaoQ,PanM,WangJ.Practicaldevice-freegesturerecognitionusingWiFisignalsbased
+onmetalearning.IEEETransIndInform.2019;16(1):228–37.doi:10.1109/tii.2019.2909877.
+119. ZhangX,TangC,YinK,NiQ.WiFi-basedcross-domaingesturerecognitionviamodifiedprototypicalnetworks.
+IEEEInternetThingsJ.2021;9(11):8584–96.doi:10.1109/jiot.2021.3114309.
+120. WangD,YangJ,CuiW,XieL,SunS.AirFi:empoweringWiFi-basedpassivehumangesturerecognitiontounseen
+environment via domain generalization. IEEE Trans Mobile Comput. 2022;23(2):1156–68. doi:10.1109/tmc.2022.
+3230665.
+121. Abuhoureyah FS, Wong YC. Location independent human activity recognition using self-training CSI-based
+techniques for wireless sensor networks. IEEE Internet Things J. 2025;12(14):27419–34. doi:10.1109/jiot.2025.
+3565384.
+
+--- PAGE 28 ---
+28 ComputMaterContin. 2026;86(1)
+1 2 2 .Z h o uS ,Z h a n gW ,P e n gD ,L i uY ,L i a oX ,J i a n gH .A d v e r s a r i a lW i F is e n s i n gf o rp r i v a c yp r e s e r v a t i o no fh u m a n
+behaviors.IEEECommunLetters.2019;24(2):259–63.doi:10.1109/lcomm.2019.2952844.
+123. Liu J, Xiao C, Cui K, Han J, Xu X, Ren K. Behavior privacy preserving in RF sensing. IEEE Trans Dependable
+SecureComput.2022;20(1):784–96.doi:10.1109/tdsc.2022.3143880.
+1 2 4 .S h e n o yJ ,L i uZ ,T a oB ,K a b e l a cZ ,V a s i s h tD .R f - p r o t e c t :p r i v a c ya g a i n s td e v i c e - f r e eh u m a nt r a c k i n g .I n :
+ProceedingsoftheACMSIGCOMM2022Conference;2022Aug22–26;Amsterdam,TheNetherlands.p.588–600.
+
+--- PAGE 29 ---
+© 2026. This work is licensed under
+https://creativecommons.org/licenses/by/4.0/ (the “License”). Notwithstanding
+the ProQuest Terms and Conditions, you may use this content in accordance
+with the terms of the License.

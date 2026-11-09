@@ -1,5 +1,9 @@
 # Wi-Fi CSI Projesi: Algoritma ve Matematik Notu
 
+> **Güncelleme (2026-11-09):** Proje tek cihaza (yalnız Alpha: AX210 yayar, aynı Pi'deki Broadcom
+> okur) taşındı. Tek kutu algılamanın matematiği, sayısal doğrulamaları ve önerilen zaman serisi
+> yöntemleri **§22**'dedir. §1–§21 iki cihazlı (Alpha–Bravo) ML hattını anlatır.
+
 Bu not, projede kullanılan ML dataset'i ve CNN/LSTM tabanlı sınıflandırma modelini matematiksel açıdan açıklamak için hazırlanmıştır. Hedef okuyucu, CSI verisini zaman-frekans matrisi olarak inceleyecek ve bu veri üzerinden araştırma/yazı hazırlayacak bir matematikçi veya sinyal işleme araştırmacısıdır.
 
 ## 1. Fiziksel Problem
@@ -819,8 +823,272 @@ passage
 
 Bu model `sit` veya `stand` tahmini üretmez; bu sınıflar için ayrıca fazlı kayıt toplanıp yeni bir genişletilmiş model eğitilmelidir.
 
-## 21. Kısa Özet
+## 21. Kısa Özet (iki cihazlı ML hattı)
 
 Bu projede CSI verisi, zaman içinde değişen 128 boyutlu log-amplitüd vektörleri olarak ele alındı. İlk modelde ardışık 24 örnek bir zaman-frekans matrisi oluşturdu. Her pencere tone bazında normalize edildi. CNN, subcarrier eksenindeki lokal frekans örüntülerini; BiLSTM ise bu örüntülerin zaman içindeki evrimini öğrendi. Model weighted cross entropy ile beş sınıflı olarak eğitildi. Canlı sistemde `hand_motion` ve `passage` sınıfları alarm olarak yorumlandı; yanlış pozitifleri azaltmak için confidence, motionScore, packetRate, streak ve cooldown içeren ek bir karar kapısı kullanıldı.
 
 Yeni geliştirme hattında bu yapı amplitüd-only olmaktan çıkarılıp `amp + phase + amp_delta + phase_delta` kanallarına genişletildi. Ayrıca tek pencere yerine aynı karar anına hizalanmış 16 ve 48 sample'lık iki pencere kullanılacak şekilde çok ölçekli CNN/LSTM mimarisi eklendi. Bu, modeli fiziksel kanal değişimlerine daha duyarlı hale getirir ve kısa el hareketlerini uzun bağlamla doğrulamaya yardımcı olur; ancak gerçek ToF/AoA düzeyinde ayrıştırma için yine çoklu anten, daha geniş bant veya ek alıcı/verici linkleri gerekebilir.
+
+Tek kutu düzeninin özeti için §22.12'ye bakın.
+
+## 22. Tek Kutu Algılamanın Matematiği (2026-11)
+
+Bu bölüm, tek cihazlı düzeni (AX210 → ortam → aynı Pi'deki Broadcom/Nexmon) ele alır. Kod:
+`device-files/csi-alpha-webui/webui/csi_residual.py` (sızıntı iptali, beyazlatma, T²) ve `csi_sensing.py`.
+Veri: 2026-11-09 kayıtları (`csi-alpha-web-20261109-*.pcap`, olay işaretleri `.events.ndjson`).
+
+### 22.1 Ölçülen kanal ve asıl zorluk
+
+Kare t, alt taşıyıcı k (f_k = k·312.5 kHz, 20 MHz'de 48 veri tonu) için:
+
+```text
+H_k(t) = g(t) · e^{-j k θ(t)} · D_k^{(s)}  +  Σ_i a_i(t) e^{-j 2π f_k τ_i(t)}  +  n_k(t)
+```
+
+- `D^{(s)}`: doğrudan AX210→Broadcom sızıntısı + statik yansımalar (duvar, eşya); verici durumu `s` başına.
+- `g(t) ∈ C`: kare başına karmaşık kazanç (AGC, ortak faz CPE, AX210'un ayrık güç durumları).
+- `θ(t)`: örnekleme zamanı kayması (STO) → alt taşıyıcılar boyunca doğrusal faz.
+- `Σ_i`: insan/nesne yansımaları, sızıntıya göre ≈ −30…−40 dB.
+
+Sızıntının büyük olması tek başına sorun değildir; sabit bir vektör bilinip çıkarılabilir. **Asıl sorun
+çarpımsal bozucudur:** `g` kestirimindeki göreli ε hatası, artığa `ε·D` olarak girer. Ölçülen 0.12 dB'lik
+seviye titreşimi ε ≈ %1.4 demektir; bu da −37 dB'lik bir artık bırakır. Aradığımız yansıma da tam bu
+seviyededir. Bu yüzden ham genlik/güç tabanlı metrikler (şekil std'si, ortak güç) ya hiçbir şey görmedi
+ya da boş odada da alarm verdi (§22.10).
+
+### 22.2 En küçük kareler izdüşümü: kazanca tam değişmez artık
+
+STO önce kaldırılır (unwrap gerektirmez, sızıntı baskın olduğundan yansımadan etkilenmez):
+
+```text
+θ̂ = ∠ Σ_k H_{k+1} H_k^*          H_k ← H_k e^{+j k θ̂}
+```
+
+Sonra her kare için skaler kazanç, sızıntının kendisi "pilot" kullanılarak kestirilir:
+
+```text
+ĝ = argmin_g ‖h − g D‖² = Dᴴh / DᴴD
+r = h / ĝ − D
+```
+
+İki özellik:
+
+1. **Diklik:** `Dᴴ(h/ĝ) = DᴴD` olduğundan `Dᴴ r = 0`. Artık, sızıntıya tam diktir.
+2. **Değişmezlik:** herhangi bir `c ∈ C` için `h → c·h` dönüşümü `ĝ → c·ĝ` verir, `r` değişmez. Yani
+   AGC, CPE ve AX210'un güç durumu sıçramaları (|c| ve ∠c ne olursa olsun) artığa **hiç girmez**.
+
+Ölçüm: kalibrasyonda artık/sızıntı gücü −27.8 dB (`ax210_action`) / −28.3 dB (`ax210_ba`). Bu değer
+alıcı gürültü tabanıdır; sızıntıdan kalan sistematik bir pay görünmez.
+
+### 22.3 Yansımanın ne kadarı korunur? (mesafeye bağlı yüksek geçiren)
+
+Gecikmesi τ olan bir yansıma, aynı RF zincirinden geçtiği için `s_τ = D ⊙ e^{-j2π f_k τ}` biçimindedir.
+İzdüşüm, `s_τ`'nun D'ye paralel kısmını ĝ'ye yükler; artıkta kalan güç payı:
+
+```text
+η(τ) = 1 − |Dᴴ s_τ|² / (‖D‖² ‖s_τ‖²)
+```
+
+Gerçek D (kalibrasyon) ile sayısal sonuç (tek yön mesafe ≈ c·τ/2):
+
+| τ (ns) | ≈ mesafe farkı | η (artıkta kalan) |
+|---|---|---|
+| 3 | 0.45 m | 0.008 (−20.8 dB) |
+| 5 | 0.75 m | 0.023 (−16.4 dB) |
+| 10 | 1.5 m | 0.090 (−10.5 dB) |
+| 15 | 2.25 m | 0.193 (−7.2 dB) |
+| 20 | 3.0 m | 0.321 (−4.9 dB) |
+| 30 | 4.5 m | 0.604 (−2.2 dB) |
+| 50 | 7.5 m | 0.971 (−0.1 dB) |
+
+**Yorum:** 20 MHz bantta (16.25 MHz kullanılan genişlik) kısa gecikmeli yansıma, sızıntıya neredeyse
+paraleldir ve büyük kısmı ĝ'ye, yani **ortak güce** gider. Uzak yansıma ise alt taşıyıcılar boyunca
+döner ve **artıkta** kalır. Ölçümlerle tutarlı: yakın hareket ortak güçte (|ĝ|) açıkça görüldü, uzak
+hareket (4–5 m kapı) yalnız artık tabanlı T²'de görüldü. İki kanal birbirini tamamlar; ortak güç kanalı
+ise AX210'un güç durumlarıyla kirlidir (§22.4).
+
+### 22.4 Verici durumları
+
+AX210, BlockAck/yönetim çerçevelerini kare kare ayrık güç durumlarında yollar (RSSI −19/−21/−23 dBm).
+Durumlar ile anahtar şöyle ilişkili:
+
+- **Şekil aynı:** bir durumun karelerinin başka durumun D'sine göre artığı 7×10⁻⁴; kendi D'sine göre
+  de 7×10⁻⁴. Fark saf kazançtır ve §22.2 bunu yok eder.
+- **Ortalama sapma ve gürültü kovaryansı farklı:** 17:46'da baskın durum −19'dan −21'e geçtikten sonra,
+  −19'dan öğrenilmiş beyazlatmayla boş odada T² medyanı **64.7** oldu (geçiş öncesi 1.06).
+- **Yeniden gönderimler** (aynı sıra-kontrol alanı art arda, karelerin %2.8'i) azınlık durumlarında
+  yoğunlaşır (%67'si, normal karelerde %14). Bunlar atılmazsa boş odada 29 yanlış küme çıkar,
+  atılınca 2. AX210 sürücüsü anten sabitlemeyi desteklemiyor (`set antenna` → EOPNOTSUPP); güç
+  sınırı (10 dBm) durumları ortadan kaldırmadı.
+
+Bu yüzden durum anahtarı `(şekil-mod kimliği, RSSI kümesi)` yapılır. RSSI kümesi, en yakın merkeze
+±1 dB toleransla atanır; sürekli titreşen RSSI tek durumda kalır. Her durumun kendi D'si (EWMA,
+τ = 30 sn) ve kendi beyazlatması vardır. Yeni durum 100 karede D'yi, 1000 karede kovaryansı öğrenir;
+öğrenilene kadar o durumdan T² üretilmez.
+
+### 22.5 Bozucu (clutter) beyazlatma
+
+`x = [Re r, Im r] ∈ R^p` (p = 2·48 = 96; ton sayısı > 64 ise ardışık tonlar 64 gruba ortalanır).
+Boş oda kovaryansı Ledoit–Wolf büzültmesiyle kestirilir:
+
+```text
+S = XᵀX/n,   m = tr(S)/p,   d² = ‖S − mI‖²_F,   b² = min(d², (Σ_i‖x_i‖⁴/n − ‖S‖²_F)/n)
+Ĉ = (b²/d²)·m·I + (1 − b²/d²)·S,          z = Ĉ^{-1/2}(x − μ)
+```
+
+Neden gerekli: 80 MHz'de p = 468 boyut, 60 sn'de 1 800 kareyle kestirildiğinde örnek kovaryansı küçük
+özdeğerleri sistematik olarak küçümser. Beyazlatma bu yönleri şişirir, kalibrasyon sonrası T²
+patlar (sentetik testte gözlendi). Gruplama + büzültme bunu giderdi.
+
+### 22.6 Değişim istatistiği: iki pencereli Hotelling T²
+
+Baskın durumun kareleriyle, pencere W = 3 sn (n_W kare) ve taban B = 20 sn (n_B kare):
+
+```text
+T²(t) = (n_W n_B / (n_W + n_B)) · ‖ z̄_{(t−W, t]} − z̄_{(t−B, t−W]} ‖² / p
+```
+
+H0 (değişim yok, z bağımsız ve beyaz) altında `p·T² ~ χ²_p`, yani `E[T²] = 1`. Ölçülen (ax210_action
+boş oda, 10.8 dk):
+
+| | p50 | p95 | p99 |
+|---|---|---|---|
+| χ²_96/96 (teori) | 0.99 | 1.25 | 1.37 |
+| Ölçülen T² | 1.07 | 1.59 | 1.91 |
+
+- **Zamansal korelasyon önemsiz:** gecikme 1–5 otokorelasyonu |ρ| < 0.01, entegre korelasyon zamanı
+  1.18 kare.
+- **Kuyruk kalın, nedeni kovaryansın zamanla değişmesi:** boş odada beyazlatılmış boyutların varyansı
+  medyan 1.07, en çok 2.2 (kalibrasyonda 1). 60 sn'lik kalibrasyon, sonraki 15 dakikanın bozucu
+  yapısını tam temsil etmiyor.
+- **Sonuç:** gövde teoriye uyuyor; durum başına beyazlatmayla son sürümde boş oda medyanı **0.95**.
+  Eşik teorik χ² kantilinden değil, kalibrasyon kareleri aynı dedektörden geçirilerek robust olarak
+  alınır: `max(med + 8·1.4826·MAD, 1.2·P99.5, 2.0)`.
+
+### 22.7 Karar katmanı
+
+T²/θ_T² hareket skoruna katılır; alarm K-of-N (3/4) histerezisle verilir. **CUSUM denendi ve
+elendi:** `S_t = max(0, S_{t−1} + log(T²_t / k))` kalın kuyruk yüzünden takılı kaldı. k = 2–3'te test
+süresinin %96–100'ünde alarmdaydı; bu yüzden "12/12" sonucu sahteydi. Sıralı testler ancak
+kuyruğu kalibre edilmiş bir olabilirlik oranıyla (§22.11-3) kullanılabilir.
+
+### 22.8 Denenip elenen yöntemler (aynı veri)
+
+| Yöntem | Neden elendi |
+|---|---|
+| Şekil std'si (log-genlik, mod içi) | Olaylarda 0.0085–0.0099, boş p99 0.0094: gürültü tabanında |
+| G: RSSI durum geçiş payı | `ax210_ba`'da 17/17, ama modem bağlantısı etkisi; `ax210_action`'da hiçbir olaya tepki yok |
+| Ortak güç üst zarfı (0.5 sn P90, durum içi) | Yakın 8/8, ama boş oda titreşimiyle aynı büyüklük: hiçbir eşik ikisini birlikte sağlamıyor |
+| Doppler bant enerjisi (0.3–25 Hz, beyaz uzayda) | Yakın 0–3/8: bu mesafede etki hızlı dönen yansıma değil, < 0.3 Hz yavaş değişim |
+| En büyük özdeğer (Roy) testi, 4 sn | Boş p99 35, 14 yanlış küme |
+| Monitör vif enjeksiyonu / yayın yönetim çerçevesi | iwlwifi, STA bağlıyken bunları havaya göndermiyor |
+
+### 22.9 Sonuçlar (son sürüm, motor replay'i)
+
+| Kayıt | Kaynak | Kalibrasyon | Yakın | Uzak 4–5 m | Boş oda |
+|---|---|---|---|---|---|
+| 17:16 | ax210_action | kendi (60 sn) | **6/8** | **9/12** | 15.4 dk: 3 alarm, sürenin %1.7'si |
+| 17:16, eski motor | ax210_action | kendi | 0/8 | 0/12 | 0 |
+| 15:47 (yalnız T², G kapalı) | ax210_ba | 15:10 kaydı (1 saat önce) | 4/6 | 1/5 | 15.1 dk: 8 alarm, %7.8 |
+
+15:47 boş odasındaki 8 alarmın hepsi, bağımsız bir istatistik olan G'nin de sıçradığı anlarda
+(16:47, 16:51–16:53). `ax210_ba`'da verici davranışı modem bağlantısına bağlı olduğundan, bu anların
+ortamdan mı modemden mi geldiği ayrılamaz.
+
+**Bağımsız test (19:20, yeni kalibrasyon, parametreler değiştirilmeden, 20.5 dk boş oda):**
+T² medyan 0.91, p95 1.44, p99 2.0. Alarmda geçen süre %1.2; 5 kısa alarm, 4'ü eşiğin hemen üstünde
+(2.3–2.7). Kullanıcı bu sürede oda kapısının dışında hareket olduğunu ve alt katın salonun tam altında
+olduğunu bildirdi. Boş dağılımın gövdesi teoriyle bağımsız olarak doğrulandı. 60 sn kalibrasyonun kuyruğu
+hafife aldığı da bağımsız olarak doğrulandı (kalibrasyon p99 1.25'e karşı boş oda p99 2.0).
+
+**Ön kayıtlı bağımsız olay testi (20:23–20:41, aynı 180 sn kalibrasyon, parametreler sabit):**
+oda içi olayların 28/32'si yakalandı. Yakın (≤ 2 m) 10/10; hareketsiz duran kişinin derin nefesi
+58 sn'nin %64'ünde alarmda; 2–4 m yürüme 5/5; kapı/giriş (4–5 m) 8/12. Kapı kapalıyken oda dışı
+hareket 1/5. Aynı ortamda boş odada 15.5 dk'da 1 alarm (§11.9, tek kutu belgesi). Böylece
+§22.10-1'deki "bağımsız doğrulama yok" sınırlaması kaldırıldı.
+
+**Karşılaştırma ve ablasyon** (`data/csi/reports/single_box_bench_2026-11-09.md`): eşit yanlış alarm
+bütçesinde (bağımsız boş oda ≤ 4/saat) T² bağımsız oda içi olayların 21/27'sini yakaladı. Klasik
+genlik varyansı 15/27, arka plan çıkarma 2/27, önceki motor 0/27 yakaladı. Ablasyon, kovaryans
+beyazlatmanın belirleyici olduğunu gösterdi (çıkarılınca 0/27). LS izdüşümü, CPE + genlik
+normalizasyonuyla pratikte eşdeğer. Durum ayrımı yalnız verici durum geçişlerinde; yeniden gönderim
+süzme ise durum ayrımı varken gereksiz.
+
+### 22.10 Matematiksel iddia ne kadar destekleniyor?
+
+**Desteklenen:**
+
+1. Kazanç/CPE/güç durumu değişmezliği bir teoremdir (§22.2). Artık seviyesi gürültü tabanında
+   (−28 dB). **Düzeltme (ablasyon):** CPE kaldırma + genlik normalizasyonu da skaler kazancı yaklaşık
+   olarak kaldırıyor ve ölçülen performans farkı yok. LS'nin katkısı kuramsal kesinlik.
+   Performansı belirleyen adım bozucu kovaryansıyla beyazlatma (§22.5).
+2. T²'nin boş odadaki gövdesi χ²_p/p ile uyumlu (medyan 0.95–1.07). Zamansal bağımsızlık
+   varsayımı ölçümle doğrulandı (τ_int = 1.18).
+3. Aynı kayıtta eski motor 0/20 yakaladı, T² 15/20. `ax210_action` boş odasında alarmda geçen süre
+   %1.7.
+4. §22.3'teki mesafe–koruma ilişkisi, "yakın = ortak güç, uzak = artık" gözlemini nicel olarak açıklıyor.
+
+**Henüz desteklenmeyen / sınırlar:**
+
+1. ~~Bağımsız doğrulama yok.~~ **Yapıldı (2026-11-09 19:55–20:41, ön kayıtlı):** boş odada 15.5 dk'da
+   1 alarm; oda içi olaylarda 28/32. Tek bir oda ve tek bir oturum olduğu için genellenebilirlik
+   hâlâ sınırlı: farklı oda, gün ve kasa ortamında tekrar edilmeli.
+2. Kuyruk χ²'den kalın (p99 1.91 / 1.37). Kalibrasyon kovaryansı durağan değil; yanlış alarm oranı
+   teorik olarak değil, yalnız ampirik olarak kontrol ediliyor.
+3. Yakın yansımanın %90'dan fazlası ĝ'ye gidiyor (§22.3). Bu yüzden ortak güç kanalı da gerekli,
+   ama o kanal verici durumlarıyla kirli.
+4. T² bir **değişim** detektörü. Hareketsiz duran kişi B = 20 sn sonra tabana karışır; kalıcı
+   varlık statik detektörün (§7.2 tek kutu belgesi) ve mikro-hareketin işi.
+5. 20 MHz'de gecikme çözünürlüğü 1/16.25 MHz ≈ 62 ns (≈ 9 m tek yön). Yansımalar mesafeye göre
+   doğrudan ayrılamıyor; ayrım yalnız §22.3'teki geometrik izdüşüm etkisiyle oluyor.
+6. `ax210_ba` sonuçları modem bağlantısı etkisini içerir; saf monostatik iddiası için yalnız
+   `ax210_action` (ya da kablolu yönetimde bağımsız verici) verisi kullanılmalıdır.
+
+### 22.11 Bu projede kullanılabilecek diğer zaman serisi yöntemleri
+
+Öncelik sırasıyla, her biri bu problemin belirli bir zayıflığına karşılık geliyor:
+
+1. **Durum içi ortak güç kanalı (|ĝ|):** §22.3'ün doğrudan sonucu. Yakın hareketin enerjisi burada.
+   Yeniden gönderimler atılmış, durum başına `log|ĝ|`'ye T² ile aynı iki pencereli test uygulanır.
+   Verici seviye titreşimi için durum içi seviyeler ayrık bir karışım olarak modellenir (Gauss
+   karışımı); test karışım ağırlıklarına değil, bileşen ortalamalarının kaymasına yapılır.
+2. **Çevrimiçi kovaryans izleme:** sessiz dönemlerde (T² < 1.5) Ĉ'yi üstel unutmayla güncellemek
+   (rank-1 güncelleme ya da PAST alt uzay izleyici). §22.10-2'deki kalın kuyruğun kaynağına
+   doğrudan çözüm.
+3. **Ampirik boş dağılımla GLR/CUSUM:** artım `log(f₁(T²)/f₀(T²))`, f₀ boş oda T²'sinin ampirik
+   dağılımından (ör. log-normal ya da ölçekli χ² karışımı) gelir. Kuyruk doğru modellenirse
+   K-of-N'den daha hızlı ve ARL (ortalama yanlış alarm aralığı) kontrollü bir karar verir.
+4. **Durum-uzay modeli + Kalman süzgeci:** `(g, θ, D)` birlikte izlenir; yansıma süreç gürültüsü
+   olarak modellenir. İnovasyon karesi (NIS) H0 altında χ² dağılır. ĝ ile T²'yi tek bir çerçevede
+   birleştirir.
+5. **Robust PCA (düşük rank + seyrek):** `H = L + S` ayrışımı (Candès). L sızıntı + statik yapı +
+   verici durumları (düşük rank), S olaylar (seyrek). Çevrimdışı etiketleme ve eşik doğrulaması için
+   güçlü bir araç.
+6. **Gecikme alanında süper-çözünürlük (MUSIC/ESPRIT, alt taşıyıcılar üzerinde uzamsal
+   yumuşatma):** yansımaların gecikmesini, yani mesafesini kestirir; τ ≈ 0 sızıntıyı kapılayıp
+   (gating) atmayı ve kasa bölgesine göre alarm vermeyi sağlar. 20 MHz'de sınırlı, 80 MHz'de anlamlı.
+7. **Çok-pencereli (Thomson multitaper) spektrum + F-testi:** artığın ilk temel bileşeninde
+   0.1–0.5 Hz periyodik bileşen (nefes) için istatistiksel test. Hareketsiz insanın varlık kanıtı;
+   §22.10-4'teki boşluğu doldurur.
+8. **Değişim noktası analizi (PELT, Bayesçi çevrimiçi BOCPD) ve dalgacık dönüşümü:** kapı açık
+   kaldı / nesne bırakıldı gibi kalıcı basamakları ve geçici olayları ayrı ölçeklerde ayırır.
+9. **HMM / yarı-Markov model:** gözlem `[T², |ĝ| değişimi, statik mesafe]`, durumlar
+   boş / hareketsiz insan / hareket. Kalma süresi öncülleriyle alarm titremesini azaltır.
+10. **Literatür bağlantısı:** `e = ‖r‖²/‖D‖² = 1 − TRRS`. TRRS (time-reversal resonating strength,
+    Origin Wireless) ölçütü, burada tanımlanan izdüşüm artığının normalize hâlidir. Bu bağlantı,
+    yöntemin tezde mevcut literatüre yerleştirilmesini sağlar.
+11. Makine öğrenmesi tarafında: boş oda artıklarıyla eğitilmiş tek-sınıf model (one-class SVM,
+    otokodlayıcı). Doğrusal olmayan beyazlatma işlevi görür. Ancak etiketli bağımsız veri
+    birikmeden önerilmez.
+
+### 22.12 Kısa özet (tek kutu)
+
+Tek kutuda ölçülen CSI'yı doğrudan sızıntı ve onu çarpan kare başına bozucu (kazanç, CPE, verici
+güç durumu) belirler. Sızıntı, kendi kendine pilot olarak kullanılıp en küçük kareler izdüşümüyle
+kazançtan bağımsız biçimde iptal edildi. Artık, verici durumu başına öğrenilen Ledoit–Wolf
+kovaryansıyla beyazlatıldı ve iki pencereli Hotelling T² ile test edildi. Boş odada istatistik
+teoriye uygun olarak ≈1. Aynı kayıtta eski yöntem 0/20 olay yakaladı, yeni yöntem 15/20; boş odada
+sürenin %1.7'si alarmda. Matematik, yakın yansımanın büyük kısmının ortak güce gittiğini öngörüyor ve
+ölçümler bunu doğruluyor. Sıradaki adımlar: bağımsız bir kayıtla doğrulama, durum içi ortak güç
+kanalı ve çevrimiçi kovaryans izleme.
+
