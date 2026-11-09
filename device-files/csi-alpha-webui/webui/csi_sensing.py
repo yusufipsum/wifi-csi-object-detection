@@ -124,12 +124,12 @@ _p("scenario", "enum", "room", group="Genel", label="Senaryo",
 _p("armed", "bool", True, group="Genel", label="Alarm kurulu",
    help_text="Kapalıyken kararlar hesaplanır ama alarm kaydı üretilmez.")
 
-_p("txBackend", "enum", "ax210_ba", group="Radyo", label="TX yöntemi",
-   help_text="ax210_ba (önerilen): Pi, AX210 üzerinden ağ geçidine hızlı ping atar; AX210 her cevaba legacy "
-             "BlockAck yayar, Broadcom bunu okur (tek kutu, 802.11ax/160 MHz modemlerle çalışır, yönetim bozulmaz). "
+_p("txBackend", "enum", "ax210_action", group="Radyo", label="TX yöntemi",
+   help_text="ax210_action (önerilen, gerçek tek kutu): AX210 bağlıyken erişim noktasına adresli küçük Public Action "
+             "yönetim çerçevesi yollar; sabit 6 Mbps legacy, hız/güç uyarlaması yok, modemin cevabına bağlı değil. "
+             "ax210_ba: Pi ağ geçidine hızlı ping atar, AX210 her cevaba BlockAck yayar; ölçüm kısmen AX210–modem "
+             "bağlantısını yansıtır (2026-11-09 bulgusu). "
              "ap_udp: AX210'un UDP veri çerçeveleri (yalnız 802.11ac/80 MHz bağlantıda okunabilir). "
-             "ax210_action (gerçek tek kutu): AX210 bağlıyken AP'ye adresli Public Action yönetim çerçevesi "
-             "yollar; sabit 6 Mbps legacy, hız/güç uyarlaması yok, modemin cevabına bağlı değil. "
              "inject: AX210 monitor modda enjeksiyon (AX210 bağlıyken iwlwifi çerçeveyi göndermiyor; yalnız bağlantısızken).",
    live=False, options=["ax210_ba", "ax210_action", "ap_udp", "inject"])
 _p("channel", "str", "auto", group="Radyo", label="Kanal (chanspec)",
@@ -146,7 +146,7 @@ _p("injectRateMbps", "float", 6.0, 6.0, 54.0, "Radyo", "Enjeksiyon hızı (Mbps)
    "Legacy OFDM hızı; 6 Mbps en sağlam.", live=False)
 _p("fcFilter", "str", "auto", group="Radyo", label="Frame-control filtresi",
    help_text="Kabul edilen 802.11 frame-control baytları (virgüllü). 'auto' = TX yöntemine göre "
-             "(ax210_ba → 0x94 BlockAck; ap_udp → 0x88,0x08; inject → 0x08). Boş = hepsi.")
+             "(ax210_action → 0xd0 Action; ax210_ba → 0x94 BlockAck; ap_udp → 0x88,0x08; inject → 0x08). Boş = hepsi.")
 
 _p("toneGroups", "int", 56, 16, 128, "Ön işleme", "Ton grubu sayısı",
    "Geçerli alt taşıyıcılar bu kadar gruba ortalanır (gürültü ↓). Değişirse yeniden kalibrasyon gerekir.")
@@ -175,9 +175,10 @@ _p("motionPowerEnabled", "bool", False, group="Hareket", label="Ortak-mod güç 
    help_text="Kare gücünün ardışık farkı da hareket kanıtı sayılır. 20 MHz/2.4 GHz kurulumlarda faydalı olabilir; "
              "80 MHz gerçek veride katkısı ihmal edilebilir bulundu (AGC gürültüsüne duyarlı).")
 _p("gainStateEnabled", "bool", True, group="Hareket", label="Kazanç/verici durumu geçişi",
-   help_text="Pencerede baskın RSSI durumunun dışına düşen karelerin payı. AX210 BlockAck'leri ortam "
-             "değişince ayrık güç durumları arasında geçer (ölçülen: −24↔−20 dBm); 2026-11-09 testinde "
-             "kapı+insan olaylarının 17/17'sini yakaladı, şekil metriği 0/17. Eşik kalibrasyondan gelir.")
+   help_text="Yalnız ax210_ba'da etkin. Pencerede baskın RSSI durumunun dışına düşen karelerin payı. AX210 "
+             "BlockAck'leri, modemle bağlantısı bozulunca ayrık güç durumları arasında geçer (ölçülen: −24↔−20 dBm). "
+             "2026-11-09'da kapı+insan olaylarının 17/17'sini yakaladı; ama bu, yansımayı değil modem bağlantısını "
+             "ölçüyor. ax210_action'da olaylara tepki vermediği için orada kapalı.")
 _p("gainStateTolDb", "float", 2.0, 0.5, 10.0, "Hareket", "Durum toleransı (dB)",
    "Baskın RSSI değerine bu kadar yakın kareler aynı durum sayılır.")
 _p("gainStateMaxDb", "float", 12.0, 3.0, 40.0, "Hareket", "Durum üst sınırı (dB)",

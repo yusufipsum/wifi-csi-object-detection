@@ -85,7 +85,7 @@
             <div class="cardHead">
               <div>
                 <h2>Spektrogram (PCA-1, son 60 sn)</h2>
-                <p class="muted small">Alt taşıyıcı gruplarının en güçlü ortak değişim yönü (PCA-1) üzerinde kısa zamanlı Fourier dönüşümü. Hareket 0.5–8 Hz'e enerji taşır; boş ortamda taban gürültüsü.</p>
+                <p class="muted small">Alt taşıyıcı gruplarının en güçlü ortak değişim yönü (PCA-1) üzerinde kısa zamanlı Fourier dönüşümü. Hızlı ve yakın hareket 0.5–8 Hz'e enerji taşır; tek kutuda etkinin çoğu 0.3 Hz altındaki yavaş değişimdir (asıl karar T² ile verilir). Boş ortamda taban gürültüsü.</p>
               </div>
               <span class="pill ghost" id="specInfo">--</span>
             </div>
@@ -186,7 +186,7 @@
             <div class="stepNo">1</div>
             <div class="stepBody">
               <div class="cardHead"><h2>Radyo kontrolü</h2><button class="btn small" id="radioRefresh">Yenile</button></div>
-              <p class="muted small">AX210 yönetim bağlantısını kullanır; ağ geçidine sondalama (ping) atar, AX210'un yaydığı BlockAck çerçevelerini Broadcom (Nexmon) okur. Kanal otomatik bulunur.</p>
+              <p class="muted small">AX210 yönetim bağlantısı aynen kalır. Seçili TX yöntemine göre AX210 çerçeve yayar (ax210_action: bağlı olduğu erişim noktasına adresli küçük yönetim çerçeveleri; ax210_ba: ağ geçidine ping, cevaplara BlockAck) ve aynı cihazdaki Broadcom (Nexmon) bunları okur. Kanal otomatik bulunur.</p>
               <dl id="radioSummary" class="kv"></dl>
               <ul id="radioNotes" class="notes"></ul>
             </div>
