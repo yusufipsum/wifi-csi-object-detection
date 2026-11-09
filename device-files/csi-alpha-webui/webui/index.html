@@ -3,167 +3,380 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>CSI Alpha Live</title>
+    <title>CSI Alpha</title>
     <link rel="stylesheet" href="/style.css">
   </head>
   <body>
-    <main class="shell">
-      <header class="topbar">
+    <header class="appbar">
+      <div class="brand">
+        <span class="brandMark" aria-hidden="true"></span>
         <div>
-          <h1>CSI Alpha Live</h1>
-          <p class="subtle">mgmt0 uzerinden web, csi0 uzerinden Nexmon CSI</p>
+          <strong>CSI Alpha</strong>
+          <small id="deviceLine">tek kutu Wi-Fi CSI algılama</small>
         </div>
-        <div class="statusStrip">
-          <span id="runState" class="pill idle">Bekliyor</span>
-          <span id="packetRate">0 pkt/s</span>
-          <span id="frameCount">0 frame</span>
-        </div>
-      </header>
+      </div>
+      <div class="appbarState">
+        <span id="runPill" class="pill idle">Bekliyor</span>
+        <span id="ratePill" class="pill ghost">0 kare/sn</span>
+      </div>
+      <div class="appbarActions">
+        <select id="captureMode" title="Çalışma modu">
+          <option value="single_box">Tek kutu</option>
+          <option value="motion">Alpha–Bravo (eski)</option>
+        </select>
+        <button id="startBtn" class="btn primary">Başlat</button>
+        <button id="stopBtn" class="btn">Durdur</button>
+        <button id="armBtn" class="btn arm" title="Alarm kur / devre dışı">Kurulu</button>
+        <button id="themeBtn" class="btn icon" title="Tema" aria-label="Tema değiştir">◐</button>
+      </div>
+    </header>
 
-      <section class="controls" aria-label="capture controls">
-        <label>
-          <span>Kanal</span>
-          <input id="channel" value="48/80" autocomplete="off">
-        </label>
-        <label>
-          <span>Bravo MAC</span>
-          <input id="sourceMac" value="88:a2:9e:5d:4e:a6" autocomplete="off">
-        </label>
-        <label>
-          <span>Mesafe</span>
-          <input id="distanceM" type="number" value="2" min="0.2" max="20" step="0.1">
-        </label>
-        <label>
-          <span>Etiket</span>
-          <select id="labelName">
-            <option value="">sadece izle</option>
-            <option value="empty">empty</option>
-            <option value="stable">stable</option>
-            <option value="walk">walk</option>
-            <option value="sit">sit</option>
-            <option value="stand">stand</option>
-            <option value="hand_motion">hand_motion</option>
-            <option value="passage">passage</option>
-          </select>
-        </label>
-        <label>
-          <span>Not</span>
-          <input id="note" value="" autocomplete="off" placeholder="opsiyonel">
-        </label>
-        <button id="startBtn" class="primary">Baslat</button>
-        <button id="stopBtn">Durdur</button>
-      </section>
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="live">Canlı</button>
+      <button class="tab" data-tab="analysis">Analiz</button>
+      <button class="tab" data-tab="setup">Kurulum</button>
+      <button class="tab" data-tab="network">Ağ</button>
+      <button class="tab" data-tab="settings">Ayarlar</button>
+      <button class="tab" data-tab="records">Kayıtlar</button>
+    </nav>
 
-      <section id="mlAlert" class="mlAlert idle">
-        <strong id="mlAlertTitle">ML modeli bekliyor</strong>
-        <span id="mlAlertMeta">hand_motion modeli yuklenmedi</span>
-      </section>
-
-      <section class="alarmPanel" aria-label="alarm history">
-        <div class="panelHead">
-          <div>
-            <h2>Realtime alarm kayıtları</h2>
-            <p id="alarmMeta" class="pathLine">Henüz alarm yok</p>
-          </div>
-          <div class="panelActions">
-            <button id="refreshAlarms" class="smallButton">Yenile</button>
-            <button id="clearAlarms" class="smallButton dangerButton">Tümünü sil</button>
+    <main class="shell">
+      <!-- ============================== CANLI ============================== -->
+      <section class="view active" id="view-live">
+        <div class="grid heroGrid">
+          <article class="card hero">
+            <span class="kicker">Genel durum</span>
+            <strong id="overallState" class="overall idle">BEKLİYOR</strong>
+            <div id="activeChips" class="chips"></div>
+            <p id="sensingMessage" class="muted">Başlat'a basın. İlk kurulumda Kurulum sekmesindeki adımları izleyin.</p>
+          </article>
+          <div class="kpis">
+            <article class="card kpi"><span>Geçerli kare</span><strong id="kpiRate">--</strong><small id="kpiRateSub">--</small></article>
+            <article class="card kpi"><span>RSSI</span><strong id="kpiRssi">--</strong><small id="kpiRssiSub">--</small></article>
+            <article class="card kpi"><span>PHY modu</span><strong id="kpiModes">--</strong><small id="kpiModesSub">--</small></article>
+            <article class="card kpi"><span>Kanal · kaynak</span><strong id="kpiChannel">--</strong><small id="kpiChannelSub">--</small></article>
           </div>
         </div>
-        <div id="alarmList" class="alarmList"></div>
+
+        <div class="grid detGrid">
+          <article class="card det" id="detMotion"><header><span>Hareket</span><b class="badge">--</b></header><strong class="detValue">--</strong><div class="meter"><i></i><em></em></div><small class="detMeta">kalibrasyon bekleniyor</small></article>
+          <article class="card det" id="detStatic"><header><span>Statik değişim · nesne</span><b class="badge">--</b></header><strong class="detValue">--</strong><div class="meter"><i></i><em></em></div><small class="detMeta">kalibrasyon bekleniyor</small></article>
+          <article class="card det" id="detState"><header><span>Durum profili</span><b class="badge">--</b></header><strong class="detValue">--</strong><div class="stateDistances"></div><small class="detMeta">profil yok</small></article>
+          <article class="card det" id="detMicro"><header><span>Mikro-hareket</span><b class="badge">--</b></header><strong class="detValue">--</strong><div class="meter"><i></i><em></em></div><small class="detMeta">kapalı</small></article>
+          <article class="card det" id="detSignal"><header><span>Sinyal · sabotaj</span><b class="badge">--</b></header><strong class="detValue">--</strong><div class="meter"><i></i><em></em></div><small class="detMeta">--</small></article>
+        </div>
+
+        <article class="card">
+          <div class="cardHead">
+            <div>
+              <h2>Zaman serisi</h2>
+              <p class="muted small">Skor = ölçülen / kalibre eşik. Kırmızı bant = alarm, dikey çizgi = işaretlenen olay. Fareyle üzerine gelin.</p>
+            </div>
+            <div class="seg" id="liveRange">
+              <button data-s="60">1 dk</button><button data-s="300" class="on">5 dk</button><button data-s="900">15 dk</button>
+              <button id="livePause" class="pauseBtn" title="Duraklat">❚❚</button>
+            </div>
+          </div>
+          <div class="chartBox"><canvas id="liveChart" height="420"></canvas><div class="tooltip" id="liveTip"></div></div>
+        </article>
+
+        <div class="grid two">
+          <article class="card">
+            <div class="cardHead">
+              <div>
+                <h2>Spektrogram (PCA-1, son 60 sn)</h2>
+                <p class="muted small">Alt taşıyıcı gruplarının en güçlü ortak değişim yönü (PCA-1) üzerinde kısa zamanlı Fourier dönüşümü. Hareket 0.5–8 Hz'e enerji taşır; boş ortamda taban gürültüsü.</p>
+              </div>
+              <span class="pill ghost" id="specInfo">--</span>
+            </div>
+            <div class="chartBox"><canvas id="liveSpec" height="230"></canvas></div>
+            <div class="chartBox thin"><canvas id="livePc1" height="90"></canvas></div>
+          </article>
+          <article class="card">
+            <div class="cardHead">
+              <div>
+                <h2>Alt taşıyıcı sapma haritası (son 60 sn)</h2>
+                <p class="muted small">Her satır bir ton grubu; renk = log-genliğin pencere ortalamasından sapması (mavi −, kırmızı +). Hareket dikey çizgiler, kalıcı değişim yatay bant olarak görünür.</p>
+              </div>
+            </div>
+            <div class="chartBox"><canvas id="liveHeat" height="330"></canvas></div>
+          </article>
+        </div>
+
+        <div class="grid two">
+          <article class="card">
+            <div class="cardHead"><h2>Olay işaretle (yer gerçeği)</h2><span class="pill ghost">tez ölçümü</span></div>
+            <p class="muted small">Gerçek olayı başladığı/bittiği anda işaretleyin. Analiz sekmesi bunlardan yakalama oranı ve gecikme hesaplar.</p>
+            <div class="row">
+              <input id="markLabel" list="markSuggestions" value="insan_girdi" aria-label="Olay adı">
+              <button class="btn primary" data-mark="start">Başladı</button>
+              <button class="btn" data-mark="end">Bitti</button>
+              <button class="btn" data-mark="instant">Anlık</button>
+            </div>
+            <datalist id="markSuggestions">
+              <option value="insan_girdi"></option><option value="gecis"></option><option value="el_hareketi"></option>
+              <option value="kapi_acildi"></option><option value="nesne_birakildi"></option><option value="nesne_alindi"></option>
+              <option value="hareketsiz_insan"></option><option value="titresim"></option>
+            </datalist>
+            <ul id="markList" class="list compact"></ul>
+          </article>
+          <article class="card">
+            <div class="cardHead"><h2>Son alarmlar</h2><button class="btn small" data-goto="records">Tümü</button></div>
+            <div id="recentAlarms" class="alarmFeed"></div>
+          </article>
+        </div>
       </section>
 
-      <section class="metricGrid">
-        <article class="metric">
-          <span>Sinif</span>
-          <strong id="classLabel">Bekliyor</strong>
-          <small id="classMeta">rules-v0</small>
-        </article>
-        <article class="metric">
-          <span>RSSI</span>
-          <strong id="rssi">--</strong>
-          <small>dBm yaklasik</small>
-        </article>
-        <article class="metric">
-          <span>Ortalama amplitud</span>
-          <strong id="avgAmp">--</strong>
-          <small id="peakAmp">peak --</small>
-        </article>
-        <article class="metric">
-          <span>Hareket skoru</span>
-          <strong id="motionScore">0.00</strong>
-          <small id="sourceInfo">--</small>
-        </article>
-        <article class="metric">
-          <span>ML kaydi</span>
-          <strong id="datasetSamples">0</strong>
-          <small id="datasetInfo">etiket yok</small>
+      <!-- ============================== ANALIZ ============================== -->
+      <section class="view" id="view-analysis">
+        <div class="grid analysisGrid">
+          <article class="card">
+            <div class="cardHead"><h2>Kayıtlar</h2><button class="btn small" id="recRefresh">Yenile</button></div>
+            <div id="recList" class="recList"></div>
+            <div class="form">
+              <label>Kalibrasyon kaynağı
+                <select id="anaCalMode">
+                  <option value="current">Cihazdaki mevcut kalibrasyon</option>
+                  <option value="segment">Bu kaydın bir aralığı</option>
+                </select>
+              </label>
+              <div class="row" id="anaCalSeg" hidden>
+                <label>Başlangıç (sn)<input id="anaCalFrom" type="number" value="0" min="0" step="5"></label>
+                <label>Bitiş (sn)<input id="anaCalTo" type="number" value="60" min="10" step="5"></label>
+              </div>
+              <label>En fazla (sn)<input id="anaMax" type="number" value="3600" min="30" step="60"></label>
+              <button class="btn primary" id="anaRun" disabled>Analiz et</button>
+              <p class="muted small" id="anaStatus">Bir kayıt seçin. Analiz, canlı sistemle aynı motoru mevcut ayarlarla çalıştırır.</p>
+            </div>
+          </article>
+          <div class="stack">
+            <div class="grid kpiRow" id="anaKpis"></div>
+            <article class="card">
+              <div class="cardHead">
+                <div>
+                  <h2 id="anaTitle">Analiz sonucu</h2>
+                  <p class="muted small">Sürükleyerek yakınlaştırın, çift tıklayarak sıfırlayın. Tüm grafikler aynı zaman eksenini paylaşır.</p>
+                </div>
+                <div class="row">
+                  <button class="btn small" id="anaReset">Sıfırla</button>
+                  <button class="btn small" id="anaCsv" disabled>CSV</button>
+                  <button class="btn small" id="anaJson" disabled>JSON</button>
+                </div>
+              </div>
+              <div class="chartBox"><canvas id="anaChart" height="420"></canvas><div class="tooltip" id="anaTip"></div></div>
+              <h3 class="sub">PCA-1 sinyali · <span id="anaPcInfo">--</span></h3>
+              <div class="chartBox thin"><canvas id="anaPc1" height="110"></canvas></div>
+              <h3 class="sub">Spektrogram (STFT)</h3>
+              <div class="chartBox"><canvas id="anaSpec" height="220"></canvas></div>
+              <h3 class="sub">Alt taşıyıcı sapma haritası</h3>
+              <div class="chartBox"><canvas id="anaHeat" height="260"></canvas></div>
+            </article>
+            <article class="card">
+              <div class="cardHead"><h2>Alarmlar ve olaylar</h2></div>
+              <div id="anaEvents" class="eventTable"></div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================== KURULUM ============================== -->
+      <section class="view" id="view-setup">
+        <div class="steps">
+          <article class="card step">
+            <div class="stepNo">1</div>
+            <div class="stepBody">
+              <div class="cardHead"><h2>Radyo kontrolü</h2><button class="btn small" id="radioRefresh">Yenile</button></div>
+              <p class="muted small">AX210 yönetim bağlantısını kullanır; ağ geçidine sondalama (ping) atar, AX210'un yaydığı BlockAck çerçevelerini Broadcom (Nexmon) okur. Kanal otomatik bulunur.</p>
+              <dl id="radioSummary" class="kv"></dl>
+              <ul id="radioNotes" class="notes"></ul>
+            </div>
+          </article>
+          <article class="card step">
+            <div class="stepNo">2</div>
+            <div class="stepBody">
+              <div class="cardHead"><h2>Kalibrasyon</h2><span id="calPill" class="pill idle">yok</span></div>
+              <p class="muted small">Ortam <b>normal</b> (boş oda / kapalı kasa) ve kimse hareket etmezken çalıştırın. Eşikler robust istatistikle (medyan + k·MAD, yüzdelik) çıkarılır. Önce Başlat'a basılmış olmalı.</p>
+              <div class="row">
+                <label>Süre (sn)<input id="calDuration" type="number" value="60" min="10" max="1800" step="5"></label>
+                <button class="btn primary" id="calStart">Kalibre et</button>
+                <button class="btn" id="calCancel">İptal</button>
+                <button class="btn" id="baselineBtn" title="Şu anki statik durumu yeni normal kabul et">Referansı tazele</button>
+              </div>
+              <div class="progress"><i id="calProgress"></i></div>
+              <dl id="calSummary" class="kv"></dl>
+              <ul id="calWarnings" class="notes warn"></ul>
+            </div>
+          </article>
+          <article class="card step">
+            <div class="stepNo">3</div>
+            <div class="stepBody">
+              <div class="cardHead"><h2>Durum profilleri <small class="muted">(isteğe bağlı)</small></h2><span id="profilePill" class="pill ghost">0</span></div>
+              <p class="muted small">Her durumu (ör. <code>kapali</code>, <code>acik</code>, <code>dolu</code>, <code>bos</code>) ayrı kaydedin. Canlıda en yakın profil seçilir; hiçbirine benzemiyorsa <b>bilinmeyen</b>. Alarm üretecek etiketler Ayarlar → Durum profilleri'nde.</p>
+              <div class="row">
+                <label>Etiket<input id="profileLabel" list="profileSuggestions" value="kapali"></label>
+                <label>Süre (sn)<input id="profileDuration" type="number" value="30" min="5" max="600" step="5"></label>
+                <button class="btn primary" id="profileStart">Kaydet</button>
+              </div>
+              <datalist id="profileSuggestions">
+                <option value="kapali"></option><option value="acik"></option><option value="yari_acik"></option>
+                <option value="bos"></option><option value="dolu"></option><option value="branda_acik"></option><option value="kesik"></option>
+              </datalist>
+              <div class="progress"><i id="profileProgress"></i></div>
+              <div id="profileList" class="list"></div>
+            </div>
+          </article>
+          <article class="card step">
+            <div class="stepNo">4</div>
+            <div class="stepBody">
+              <div class="cardHead"><h2>Kur ve izle</h2></div>
+              <p class="muted small">Üst çubuktaki <b>Kurulu</b> düğmesi alarmı kurar ve statik referansı o anki ortama tazeler. Canlı sekmesinden izleyin; deneylerde olayları işaretleyin, sonra Analiz sekmesinde ölçün.</p>
+              <div class="row"><button class="btn primary" data-goto="live">Canlı izlemeye geç</button><button class="btn" data-goto="settings">Senaryo ve eşikler</button></div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============================== AG ============================== -->
+      <section class="view" id="view-network">
+        <div class="grid two">
+          <article class="card">
+            <div class="cardHead"><h2>Bağlantı</h2><button class="btn small" id="netRefresh">Yenile</button></div>
+            <dl id="netSummary" class="kv"></dl>
+            <p class="muted small">Aynı ağdaki herhangi bir bilgisayardan panel: <b id="netMdns">--</b>. Tüm ayarlar cihazda saklanır; hangi bilgisayardan açarsanız açın aynı sistemi görürsünüz.</p>
+            <div id="netUrls" class="urlList"></div>
+          </article>
+          <article class="card">
+            <div class="cardHead"><h2>Kayıtlı ağlar</h2></div>
+            <p class="muted small">Açılışta öncelik sırasına göre denenir; hiçbiri yoksa Ethernet, o da yoksa kurulum hotspot'u açılır.</p>
+            <div id="savedNets" class="list"></div>
+          </article>
+        </div>
+        <div class="grid two">
+          <article class="card">
+            <div class="cardHead"><h2>Yeni ağa bağlan</h2><button class="btn small" id="netScan">Tara</button></div>
+            <div id="scanList" class="list scan"></div>
+            <div class="form">
+              <div class="row">
+                <label>SSID<input id="netSsid" autocomplete="off"></label>
+                <label>Parola<input id="netPass" type="password" autocomplete="new-password"></label>
+              </div>
+              <div class="row">
+                <label class="check"><input type="checkbox" id="netHidden"> Gizli ağ</label>
+                <label>Öncelik<input id="netPrio" type="number" value="50" min="0" max="999"></label>
+                <button class="btn primary" id="netConnect">Bağlan</button>
+              </div>
+              <p class="notice">Bağlanınca panel bu ağdan kopar. Cihaz yeni ağda <b>csi-alpha.local:8080</b> adresinde olur. Bağlanamazsa 1–2 dk içinde önceki ağa, o da olmazsa kurulum hotspot'una döner.</p>
+            </div>
+          </article>
+          <article class="card">
+            <div class="cardHead"><h2>Kurulum hotspot'u ve erişim</h2><span id="hotspotPill" class="pill ghost">kapalı</span></div>
+            <p class="muted small">Bilinen ağ yoksa cihaz kendi Wi-Fi'ını (2.4 GHz) açar: bağlanıp <b>http://10.42.0.1:8080</b> adresinden yeni ağ ekleyin.</p>
+            <div class="form">
+              <div class="row">
+                <label>Hotspot SSID<input id="hsSsid"></label>
+                <label>Hotspot parolası<input id="hsPass" type="text" minlength="8"></label>
+              </div>
+              <div class="row">
+                <label class="check"><input type="checkbox" id="hsAuto"> Bağlantı yoksa otomatik aç</label>
+                <label>Bekleme (sn)<input id="hsAfter" type="number" min="30" max="3600" step="30"></label>
+              </div>
+              <div class="row">
+                <label>Panel parolası<input id="panelPass" type="password" placeholder="boş = parolasız" autocomplete="new-password"></label>
+              </div>
+              <div class="row">
+                <button class="btn primary" id="netSaveCfg">Kaydet</button>
+                <button class="btn" id="hsOn">Hotspot'u aç</button>
+                <button class="btn" id="hsOff">Hotspot'u kapat</button>
+              </div>
+            </div>
+            <h3 class="sub">Ağ değişikliği günlüğü</h3>
+            <pre id="netLog" class="log"></pre>
+          </article>
+        </div>
+      </section>
+
+      <!-- ============================== AYARLAR ============================== -->
+      <section class="view" id="view-settings">
+        <article class="card">
+          <div class="cardHead">
+            <div>
+              <h2>Senaryo ve parametreler</h2>
+              <p class="muted small">⟳ işaretliler Başlat'ta etkili, diğerleri anında uygulanır. Her alanın altında varsayılan değer ve açıklama vardır.</p>
+            </div>
+            <div class="row">
+              <select id="scenarioSelect" aria-label="Senaryo"></select>
+              <input id="settingsSearch" placeholder="Parametre ara…" aria-label="Parametre ara">
+              <button class="btn primary" id="settingsSave">Kaydet</button>
+              <button class="btn" id="settingsReset">Varsayılanlar</button>
+            </div>
+          </div>
+          <p id="scenarioDesc" class="notice"></p>
+          <p id="settingsMeta" class="muted small"></p>
+          <div id="settingsForm" class="settingsForm"></div>
         </article>
       </section>
 
-      <section class="charts">
-        <article class="panel wide">
-          <div class="panelHead">
-            <h2>Subcarrier amplitud</h2>
-            <span id="seqInfo">seq --</span>
+      <!-- ============================== KAYITLAR ============================== -->
+      <section class="view" id="view-records">
+        <div class="grid two">
+          <article class="card">
+            <div class="cardHead"><h2>Alarm geçmişi</h2><div class="row"><button class="btn small" id="alarmRefresh">Yenile</button><button class="btn small danger" id="alarmClear">Tümünü sil</button></div></div>
+            <div id="alarmList" class="alarmFeed tall"></div>
+          </article>
+          <article class="card">
+            <div class="cardHead"><h2>Dosyalar</h2><button class="btn small" id="filesRefresh">Yenile</button></div>
+            <p class="muted small" id="filesMeta">pcap, karar günlüğü (.sensing.ndjson), olaylar (.events.ndjson) ve veri setleri</p>
+            <div id="fileList" class="list files"></div>
+          </article>
+        </div>
+        <details class="card legacy">
+          <summary><b>Eski deneyler</b> <span class="muted small">Alpha–Bravo CNN/LSTM hareket modu, veri seti etiketi ve süreli branda yansıma ölçümü</span></summary>
+          <div class="grid two">
+            <div class="form">
+              <h3 class="sub">Alpha–Bravo hareket modu</h3>
+              <p class="muted small">Üst çubukta mod "Alpha–Bravo (eski)" seçiliyken Başlat bu ayarları kullanır.</p>
+              <div class="row">
+                <label>Bravo MAC<input id="sourceMac" value="88:a2:9e:5d:4e:a6"></label>
+                <label>Kanal<input id="legacyChannel" value="48/80"></label>
+                <label>Mesafe (m)<input id="distanceM" type="number" value="2" step="0.1"></label>
+              </div>
+              <div class="row">
+                <label>Veri seti etiketi (her iki mod)
+                  <select id="labelName">
+                    <option value="">kaydetme</option><option value="empty">empty</option><option value="stable">stable</option>
+                    <option value="walk">walk</option><option value="sit">sit</option><option value="stand">stand</option>
+                    <option value="hand_motion">hand_motion</option><option value="passage">passage</option>
+                  </select>
+                </label>
+                <label>Not<input id="note"></label>
+              </div>
+              <div id="mlBox" class="notice">CNN/LSTM: --</div>
+            </div>
+            <div class="form">
+              <h3 class="sub">Süreli branda yansıma ölçümü</h3>
+              <div class="row">
+                <label>Süre (sn)<input id="reflectionDuration" type="number" value="300" min="5" max="7200" step="5"></label>
+                <label>Durum<select id="reflectionLabel"><option>closed</option><option>open</option><option>partial_open</option><option>weak_reflection</option></select></label>
+                <label>PPS<input id="reflectionPps" type="number" value="20" min="1" max="200"></label>
+              </div>
+              <div class="row">
+                <button class="btn primary" id="reflectionStart">Ölç</button>
+                <button class="btn" id="reflectionStop">Kes</button>
+                <button class="btn" id="reflectionProfile">Profil oluştur</button>
+                <span id="reflectionState" class="pill ghost">Hazır</span>
+              </div>
+              <p id="reflectionMeta" class="muted small">--</p>
+              <pre id="reflectionLogs" class="log"></pre>
+            </div>
           </div>
-          <canvas id="ampCanvas" width="960" height="260"></canvas>
-          <div id="ampMeta" class="chartMeta">Subcarrier bilgisi bekleniyor</div>
-          <div id="ampScale" class="chartScale">x: tone indeksi · y: log10 amplitud</div>
-        </article>
-
-        <article class="panel wide">
-          <div class="panelHead">
-            <h2>CSI zaman-isı haritasi</h2>
-            <span id="heatWindow">son 120 kesit</span>
-          </div>
-          <canvas id="heatCanvas" width="960" height="320"></canvas>
-          <div class="heatLegend" aria-label="heatmap color scale">
-            <span>Düşük enerji</span>
-            <span class="legendRamp"></span>
-            <span>Yüksek enerji</span>
-          </div>
-          <div id="heatMeta" class="chartMeta">Heatmap matrisi bekleniyor</div>
-          <div id="heatScale" class="chartScale">renk: her zaman satırında normalize edilmiş log10 amplitud</div>
-        </article>
-
-        <article class="panel">
-          <div class="panelHead">
-            <h2>Dalgalanma</h2>
-            <span>hareket izi</span>
-          </div>
-          <canvas id="motionCanvas" width="460" height="220"></canvas>
-          <div id="motionMeta" class="chartMeta">Hareket penceresi bekleniyor</div>
-        </article>
-
-        <article class="panel">
-          <div class="panelHead">
-            <h2>Sistem</h2>
-            <span id="capturePath">pcap --</span>
-          </div>
-          <p id="datasetPath" class="pathLine">dataset --</p>
-          <pre id="logs"></pre>
-        </article>
-
-        <article class="panel wide">
-          <div class="panelHead">
-            <h2>Kayıtlar</h2>
-            <button id="refreshFiles" class="smallButton">Yenile</button>
-          </div>
-          <p id="filesMeta" class="pathLine">pcap ve dataset dosyaları burada görünür</p>
-          <div class="fileGrid">
-            <section>
-              <h3>CSI pcap</h3>
-              <div id="captureFiles" class="fileList"></div>
-            </section>
-            <section>
-              <h3>ML dataset</h3>
-              <div id="datasetFiles" class="fileList"></div>
-            </section>
-          </div>
-        </article>
+          <h3 class="sub">Sistem günlüğü</h3>
+          <pre id="logs" class="log"></pre>
+        </details>
       </section>
     </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="/charts.js"></script>
     <script src="/app.js"></script>
   </body>
 </html>
